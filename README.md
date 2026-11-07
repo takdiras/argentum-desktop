@@ -17,7 +17,8 @@ result.
 | Piece | What it does |
 |-------|--------------|
 | `patches/0001-remote-backend.patch` | Edits to existing upstream files: a WebSocket URL from the configured backend, and share links that use the public site instead of `tauri.localhost`. |
-| `overlay/web-client/src/desktop/` | New files: `backend.ts` (the `VITE_BACKEND_URL` helper) and `installDesktopFetch.ts` (routes `/api/*` calls through Tauri's HTTP plugin). |
+| `patches/0002-desktop-sign-in.patch` | One line in the sign-in modal that shows the paste-the-link step (desktop build only). |
+| `overlay/web-client/src/desktop/` | New files: `backend.ts` (the `VITE_BACKEND_URL` helper), `installDesktopFetch.ts` (routes `/api/*` calls through Tauri's HTTP plugin), and `PasteSignInLink.tsx` + `signInLink.ts` (magic-link sign-in, below). |
 | `src-tauri/` | The Tauri v2 shell: window config, CSP, and a capability that allows HTTP to `magic.wingedsheep.com` only. |
 
 **Why the HTTP plugin?** The production server sends no CORS headers, so a webview served from
@@ -54,10 +55,30 @@ BACKEND_URL=https://my-server.example bun run dev
 Also change the URL in `src-tauri/capabilities/default.json` (`http:default` allow list) and in the CSP's
 `connect-src` / `img-src` in `src-tauri/tauri.conf.json`. Both are locked to the production host by default.
 
+## Signing in
+
+Accounts use a passwordless magic link. The server builds that link from its own configured public URL, so
+the email always points at the website (`https://magic.wingedsheep.com/login/verify?token=…`), never at this
+app, and the token inside works exactly once. A one-click "open in the app" link would need the server's
+domain to serve app-link files, which is a server-side change this project deliberately doesn't depend on.
+
+So in the desktop app:
+
+1. Enter your email in the sign-in dialog and request the link.
+2. In the email, **don't click the button.** Right-click it and choose *Copy link address*. Opening it in a
+   browser signs you in on the website and uses up the token.
+3. Paste the link into the dialog's *Paste the sign-in link* field and press *Sign in with link*.
+
+The pasted text can be the full link, just `?token=…`, or the bare token. If the link was already opened or
+has expired, request a new one.
+
+If the server maintainers ever add a redirect or app-link support, a `tauri-plugin-deep-link` handler could
+replace the paste step; nothing here blocks that.
+
 ## Known limitations
 
-- **Magic-link sign-in.** The emailed link opens the website, not the app, so it signs you in there. Playing
-  as a guest works fine. A deep link (`tauri-plugin-deep-link`) would fix this.
+- **Sign-in is copy-and-paste, not one click.** See [Signing in](#signing-in) below. Playing as a guest needs
+  no account.
 - **Server compatibility.** The app speaks whatever protocol the pinned client version speaks. If the server
   ships a breaking change, bump `UPSTREAM_COMMIT`, re-run `bun run prepare:web`, and rebuild.
 - **Dev-only features** (Scenario Builder, `/api/dev/*`) only exist on development servers.
