@@ -1,0 +1,246 @@
+diff --git a/web-client/src/components/cards/CardDetailDialog.tsx b/web-client/src/components/cards/CardDetailDialog.tsx
+index 95a4d31..eb2a160 100644
+--- a/web-client/src/components/cards/CardDetailDialog.tsx
++++ b/web-client/src/components/cards/CardDetailDialog.tsx
+@@ -7,6 +7,7 @@
+  * copy a link to it. The type line, set and printing chips are themselves searches, so a card leads
+  * to its neighbours. ← / → step through the current results; Esc closes.
+  */
++import { publicOrigin } from '@/desktop/backend'
+ import { useEffect, useMemo, useRef, useState } from 'react'
+ import { createPortal } from 'react-dom'
+ import type { CardSummary } from '@/components/deckbuilder/cardFilter'
+@@ -85,7 +86,7 @@ export function CardDetailDialog({
+ 
+   const [copied, setCopied] = useState(false)
+   const copyLink = () => {
+-    const url = `${window.location.origin}/cards?card=${encodeURIComponent(card.name)}`
++    const url = `${publicOrigin()}/cards?card=${encodeURIComponent(card.name)}`
+     void navigator.clipboard?.writeText(url).then(() => {
+       setCopied(true)
+       window.setTimeout(() => setCopied(false), 1800)
+diff --git a/web-client/src/components/cube/ShareCubeDialog.tsx b/web-client/src/components/cube/ShareCubeDialog.tsx
+index 426cc65..ab437d3 100644
+--- a/web-client/src/components/cube/ShareCubeDialog.tsx
++++ b/web-client/src/components/cube/ShareCubeDialog.tsx
+@@ -6,6 +6,7 @@
+  * rather than silently left out. Anyone can still copy the cube as a text list — the format the
+  * editor's Paste tab reads back — so a guest is never stuck.
+  */
++import { publicOrigin } from '@/desktop/backend'
+ import { useState } from 'react'
+ import { createPortal } from 'react-dom'
+ import { sharedCubePath } from '@/api/account'
+@@ -46,7 +47,7 @@ export function ShareCubeDialog({
+   const [copied, setCopied] = useState<'link' | 'text' | null>(null)
+   const [loginOpen, setLoginOpen] = useState(false)
+ 
+-  const url = code ? `${window.location.origin}${sharedCubePath(code)}` : null
++  const url = code ? `${publicOrigin()}${sharedCubePath(code)}` : null
+   const inCloud = saved?.cloudId != null
+ 
+   async function copy(value: string, what: 'link' | 'text') {
+@@ -79,7 +80,7 @@ export function ShareCubeDialog({
+       if (!target || target.cloudId == null) throw new Error('Save the cube to your account first')
+       const shareCode = await share(target)
+       setCode(shareCode)
+-      await copy(`${window.location.origin}${sharedCubePath(shareCode)}`, 'link')
++      await copy(`${publicOrigin()}${sharedCubePath(shareCode)}`, 'link')
+     })
+ 
+   const revoke = () =>
+diff --git a/web-client/src/components/deckbuilder/DeckbuilderPage.tsx b/web-client/src/components/deckbuilder/DeckbuilderPage.tsx
+index ffdd063..fc3a7c3 100644
+--- a/web-client/src/components/deckbuilder/DeckbuilderPage.tsx
++++ b/web-client/src/components/deckbuilder/DeckbuilderPage.tsx
+@@ -9,6 +9,7 @@
+  * Decoupled from gameStore — runs offline. Persistence is via useDeckLibrary
+  * (localStorage). Server validation reuses POST /api/decks/validate.
+  */
++import { publicOrigin } from '@/desktop/backend'
+ import { memo, startTransition, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+ import {
+@@ -1205,7 +1206,7 @@ export function DeckbuilderPage() {
+     const shared = buildSharedDeck()
+     if (!shared) return
+     const code = await encodeSharedDeck(shared, resolvePrinting)
+-    const url = buildShareUrl(window.location.origin, code)
++    const url = buildShareUrl(publicOrigin(), code)
+     try {
+       await navigator.clipboard.writeText(url)
+       setShareCopied(true)
+diff --git a/web-client/src/components/replay/ReplayPlayer.tsx b/web-client/src/components/replay/ReplayPlayer.tsx
+index 427449c..ccf4c04 100644
+--- a/web-client/src/components/replay/ReplayPlayer.tsx
++++ b/web-client/src/components/replay/ReplayPlayer.tsx
+@@ -13,6 +13,7 @@
+  * that lists games and must not navigate (navigating away would drop the WebSocket). What they
+  * share is everything after "here are the frames" — which is all of this file.
+  */
++import { publicOrigin } from '@/desktop/backend'
+ import { useCallback, useEffect, useRef, useState } from 'react'
+ import type React from 'react'
+ import { useGameStore } from '@/store/gameStore.ts'
+@@ -197,13 +198,13 @@ export function ReplayPlayer({
+ 
+   const handleShareAsScenario = () =>
+     copyToClipboard(
+-      buildReplayScenarioUrl(window.location.origin, gameId, currentStep),
++      buildReplayScenarioUrl(publicOrigin(), gameId, currentStep),
+       'Copy this scenario link',
+       setScenarioCopied,
+     )
+ 
+   const handleShareReplay = () =>
+-    copyToClipboard(`${window.location.origin}/replay/${gameId}`, 'Copy this replay link', setReplayCopied)
++    copyToClipboard(`${publicOrigin()}/replay/${gameId}`, 'Copy this replay link', setReplayCopied)
+ 
+   const handleDownloadSnapshot = async () => {
+     // Download the frame's full game state as a file you can reload from the Scenario Builder.
+diff --git a/web-client/src/components/scenario/ScenarioBuilderPage.tsx b/web-client/src/components/scenario/ScenarioBuilderPage.tsx
+index 3cb6287..e51f99f 100644
+--- a/web-client/src/components/scenario/ScenarioBuilderPage.tsx
++++ b/web-client/src/components/scenario/ScenarioBuilderPage.tsx
+@@ -12,6 +12,7 @@
+  * through an encoded `?s=` share URL, a JSON drawer, and `.json` files; a `?replay=&frame=`
+  * link jumps straight into a stored replay position.
+  */
++import { publicOrigin } from '@/desktop/backend'
+ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+ import { Link, useSearchParams } from 'react-router-dom'
+ import { CardBrowser, useCardCatalog, type CardDragPayload } from '@/components/deckbuilder/browser'
+@@ -422,7 +423,7 @@ export function ScenarioBuilderPage() {
+ 
+   const handleShare = useCallback(async () => {
+     const code = await encodeScenario(currentSpec())
+-    const url = buildScenarioUrl(window.location.origin, code)
++    const url = buildScenarioUrl(publicOrigin(), code)
+     try {
+       await navigator.clipboard.writeText(url)
+       setStatus('Share link copied to clipboard.')
+diff --git a/web-client/src/components/tournament/FreeForAllOverlay.tsx b/web-client/src/components/tournament/FreeForAllOverlay.tsx
+index bd21b27..150d5dd 100644
+--- a/web-client/src/components/tournament/FreeForAllOverlay.tsx
++++ b/web-client/src/components/tournament/FreeForAllOverlay.tsx
+@@ -1,3 +1,4 @@
++import { publicOrigin } from '@/desktop/backend'
+ import { useState, useCallback } from 'react'
+ import { useGameStore, type FfaState } from '@/store/gameStore.ts'
+ import { ReplayViewer, type GameSummary } from '../admin/ReplayViewer'
+@@ -22,7 +23,7 @@ export function FreeForAllOverlay({ ffaState }: { ffaState: FfaState }) {
+   const [showReplays, setShowReplays] = useState(false)
+   const [confirmLeave, setConfirmLeave] = useState(false)
+ 
+-  const shareLink = `${window.location.origin}/tournament/${ffaState.lobbyId}`
++  const shareLink = `${publicOrigin()}/tournament/${ffaState.lobbyId}`
+   const copyShareLink = () => {
+     navigator.clipboard.writeText(shareLink)
+     setLinkCopied(true)
+diff --git a/web-client/src/components/tournament/TournamentOverlay.tsx b/web-client/src/components/tournament/TournamentOverlay.tsx
+index ee45fb4..c9fbd95 100644
+--- a/web-client/src/components/tournament/TournamentOverlay.tsx
++++ b/web-client/src/components/tournament/TournamentOverlay.tsx
+@@ -1,3 +1,4 @@
++import { publicOrigin } from '@/desktop/backend'
+ import { useState, useEffect, useCallback, useRef } from 'react'
+ import { useGameStore, type TournamentState } from '@/store/gameStore.ts'
+ import type { SealedCardInfo } from '@/types'
+@@ -96,7 +97,7 @@ export function TournamentOverlay({
+     return () => clearInterval(timer)
+   }, [hasDisconnected])
+ 
+-  const shareLink = `${window.location.origin}/tournament/${tournamentState.lobbyId}`
++  const shareLink = `${publicOrigin()}/tournament/${tournamentState.lobbyId}`
+   const copyShareLink = () => {
+     navigator.clipboard.writeText(shareLink)
+     setLinkCopied(true)
+diff --git a/web-client/src/main.tsx b/web-client/src/main.tsx
+index b72b415..9c96b13 100644
+--- a/web-client/src/main.tsx
++++ b/web-client/src/main.tsx
+@@ -1,3 +1,4 @@
++import './desktop/installDesktopFetch'
+ import { StrictMode, Suspense, lazy } from 'react'
+ import { createRoot } from 'react-dom/client'
+ import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom'
+diff --git a/web-client/src/network/websocket.ts b/web-client/src/network/websocket.ts
+index e2d78cf..2017957 100644
+--- a/web-client/src/network/websocket.ts
++++ b/web-client/src/network/websocket.ts
+@@ -1,3 +1,4 @@
++import { backendWebSocketUrl } from '@/desktop/backend'
+ import type { ClientMessage, ServerMessage } from '@/types'
+ 
+ export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected'
+@@ -351,6 +352,10 @@ export class GameWebSocket {
+  * Default WebSocket URL based on environment.
+  */
+ export function getWebSocketUrl(): string {
++  // Desktop (Tauri) build: the backend is a fixed remote host, not whatever served the page.
++  const remote = backendWebSocketUrl()
++  if (remote) return remote
++
+   // In development, use Vite proxy
+   if (import.meta.env.DEV) {
+     return `ws://${window.location.host}/game`
+diff --git a/web-client/src/pages/HelpPage.tsx b/web-client/src/pages/HelpPage.tsx
+index 6f66c77..0c11831 100644
+--- a/web-client/src/pages/HelpPage.tsx
++++ b/web-client/src/pages/HelpPage.tsx
+@@ -8,6 +8,7 @@
+  * spans every section, a per-section topic index, and a copy-link button on each topic — the deep
+  * links existed but there was no way to get one out of the page.
+  */
++import { publicOrigin } from '@/desktop/backend'
+ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+ import { Link, useNavigate, useParams } from 'react-router-dom'
+ import {
+@@ -380,7 +381,7 @@ function indexKey(title: string): string {
+ /** Copies the topic's deep link. The links already worked; there was no way to obtain one. */
+ function CopyLinkButton({ topic }: { topic: HelpTopic }) {
+   const [copied, setCopied] = useState(false)
+-  const url = new URL(helpHref(topic), window.location.origin).href
++  const url = new URL(helpHref(topic), publicOrigin()).href
+ 
+   const copy = () => {
+     void navigator.clipboard?.writeText(url).then(
+diff --git a/web-client/src/pages/ProfilePage.tsx b/web-client/src/pages/ProfilePage.tsx
+index 07def12..3b8b55d 100644
+--- a/web-client/src/pages/ProfilePage.tsx
++++ b/web-client/src/pages/ProfilePage.tsx
+@@ -5,6 +5,7 @@
+  * decks or watched/shared as a replay. Prompts sign-in when anonymous. The heavy analytics (charts,
+  * head-to-head, colors, mana curve, …) live on the separate /stats page.
+  */
++import { publicOrigin } from '@/desktop/backend'
+ import { useEffect, useState } from 'react'
+ import type React from 'react'
+ import { useNavigate } from 'react-router-dom'
+@@ -68,7 +69,7 @@ export function ProfilePage() {
+   const [deckModal, setDeckModal] = useState<{ gameId: string; opponent: string } | null>(null)
+ 
+   const shareReplay = (gameId: string) => {
+-    const url = `${window.location.origin}/replay/${gameId}`
++    const url = `${publicOrigin()}/replay/${gameId}`
+     void navigator.clipboard.writeText(url).then(
+       () => {
+         setCopiedReplay(gameId)
+diff --git a/web-client/src/utils/joinLink.ts b/web-client/src/utils/joinLink.ts
+index b054b91..e110f67 100644
+--- a/web-client/src/utils/joinLink.ts
++++ b/web-client/src/utils/joinLink.ts
+@@ -1,3 +1,4 @@
++import { publicOrigin } from '@/desktop/backend'
+ /**
+  * Builds the shareable deep-link a player scans / clicks to join a lobby.
+  *
+@@ -5,7 +6,7 @@
+  * quick-game join handler delegates to the tournament join handler when the id is a tournament lobby,
+  * so one link works for Quick Game lobbies, sealed/draft lobbies and tournaments alike.
+  */
+-export function buildJoinUrl(lobbyId: string, origin: string = window.location.origin): string {
++export function buildJoinUrl(lobbyId: string, origin: string = publicOrigin()): string {
+   // Strip any trailing slash so we never emit a double slash for a root-hosted origin.
+   return `${origin.replace(/\/$/, '')}/join/${encodeURIComponent(lobbyId)}`
+ }

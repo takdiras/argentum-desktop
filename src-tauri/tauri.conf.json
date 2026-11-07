@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Argentum Desktop",
+  "version": "0.1.0",
+  "identifier": "com.takdiras.argentum-desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev:web",
+    "beforeBuildCommand": "npm run build:web",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../vendor/argentum-engine/web-client/dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Argentum",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cards.scryfall.io https://backs.scryfall.io https://api.scryfall.com https://magic.wingedsheep.com; connect-src 'self' ipc: http://ipc.localhost wss://magic.wingedsheep.com https://magic.wingedsheep.com; font-src 'self' data:; worker-src 'self' blob:",
+      "devCsp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "CardGame",
+    "shortDescription": "Desktop client for Argentum Engine",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
