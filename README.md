@@ -36,9 +36,19 @@ Nothing on the server needed to change.
 
 ```bash
 bun install
-bun run prepare:web   # fetch + patch + install the upstream web-client (re-run after changing UPSTREAM_COMMIT or the patch)
 bun run dev           # desktop window with hot reload, talking to the production server
 ```
+
+The first `dev` or `build` fetches and patches the upstream web-client by itself (a minute or two, needs
+network access to GitHub). To redo that on demand, for example after changing `UPSTREAM_COMMIT` or a patch:
+
+```bash
+bun run prepare:web
+```
+
+The dev server listens on `127.0.0.1:1420` and fails immediately if that port is taken, instead of quietly
+loading some other app. Free the port, or change it in both `package.json` (`dev:web`) and
+`src-tauri/tauri.conf.json` (`devUrl`).
 
 Build an installer or app bundle:
 
