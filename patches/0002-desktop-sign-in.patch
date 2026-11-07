@@ -1,0 +1,21 @@
+diff --git a/web-client/src/components/auth/LoginModal.tsx b/web-client/src/components/auth/LoginModal.tsx
+index 53425aa..00173a1 100644
+--- a/web-client/src/components/auth/LoginModal.tsx
++++ b/web-client/src/components/auth/LoginModal.tsx
+@@ -5,6 +5,8 @@
+ import { useEffect, useState } from 'react'
+ import type React from 'react'
+ import { requestLogin } from '@/api/account'
++import { BACKEND_URL } from '@/desktop/backend'
++import { PasteSignInLink } from '@/desktop/PasteSignInLink'
+ import a from '@/components/profile/account.module.css'
+ import p from '@/components/ui/PageShell.module.css'
+ 
+@@ -87,6 +89,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
+               We sent a sign-in link to <strong className={a.strong}>{email}</strong>. Open it on this device to finish
+               signing in. The link expires shortly and can be used once.
+             </p>
++            {BACKEND_URL && <PasteSignInLink />}
+             <button type="button" onClick={onClose} className={p.buttonPrimary}>
+               Done
+             </button>
