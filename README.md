@@ -65,6 +65,29 @@ BACKEND_URL=https://my-server.example bun run dev
 Also change the URL in `src-tauri/capabilities/default.json` (`http:default` allow list) and in the CSP's
 `connect-src` / `img-src` in `src-tauri/tauri.conf.json`. Both are locked to the production host by default.
 
+## Connection status
+
+A small pill in the bottom-left corner shows the latest network event, like a browser's status bar:
+`Loading magic.wingedsheep.com/api/cards… 12s`, a finished request with its timing, or `Failed: …` in red
+with a failure count.
+
+- **Hover** the pill to open the full list of every request and WebSocket the app has made: time, method,
+  path, status, duration, which stack carried it (`tauri` = the Rust HTTP client, `browser` = the webview),
+  and the error for failures.
+- **Click** the pill (or *Pin*) to keep the list open so you can scroll it; `Esc` closes it.
+- *Failed only* filters to errors, *Copy* puts the whole log on the clipboard, *Clear* empties it.
+
+The same events are printed to the terminal as `[net] …` lines under `bun run dev`.
+
+Why it exists: the upstream client swallows several request errors (for example `fetch('/api/cards')
+.catch(() => {})`), so a failed or slow load looks like missing data instead of an error. The deck view,
+for one, labels every card "not implemented" until the card catalog has arrived.
+
+**The card catalog is large.** `/api/cards` is about 29 MB of JSON uncompressed (about 3 MB gzipped, 21k cards).
+Tauri's HTTP plugin doesn't request compression unless its `gzip` / `brotli` / `deflate` features are enabled,
+so this project enables them in `src-tauri/Cargo.toml`. Without that, the catalog takes many times longer
+and decks show "not implemented" for the whole wait.
+
 ## Signing in
 
 Accounts use a passwordless magic link. The server builds that link from its own configured public URL, so
