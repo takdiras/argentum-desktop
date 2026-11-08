@@ -25,6 +25,8 @@ files into upstream. That keeps upstream's code recognisable and the patches eas
 | `patches/0004-arena-stack.patch` | Larger stack card, bigger and higher-contrast effect text, and the three-dot yield button. |
 | `patches/0005-midnight-theme.patch` | Registers the build-time theme plugin in `vite.config.ts`. |
 | `patches/0006-primary-action-hotkey.patch` | Marks the combat and distribute confirm buttons, and the card action menu, for the Space hotkey. |
+| `patches/0007-opponent-waiting-indicator.patch` | Mounts the waiting spinner beside the opponent's name in the life display. |
+| `patches/0008-arena-opponent-hand-and-top-rail.patch` | Floats the opponent's hand, runs the multiplayer seat rail along the top, and keeps pod cells equal. |
 | `overlay/web-client/src/desktop/` | New files: `backend.ts`, `installDesktopFetch.ts` and the connection status (above), and `PasteSignInLink.tsx` + `signInLink.ts` (sign-in, below). |
 | `overlay/web-client/src/desktop/arena/` | The arena layout: zones, compact card face, sizing solver, stack metrics, settings control. |
 | `overlay/web-client/desktop-midnight-theme.mjs` | The Vite plugin that retints upstream's purples to near-black navy. |
@@ -84,11 +86,28 @@ choice is stored in `localStorage` only; it is never sent to the server.
   and toughness sit at the bottom-right. Counters, keywords, targeting highlights and the hover preview
   (which still shows the whole card) are unchanged, because the compact face is drawn by upstream's own
   `GameCard`. Corners keep a real card's proportion (3 mm on 63 mm, about 4.8% of the width), so they match
-  an actual card at any size instead of upstream's fixed 8 px.
+  an actual card at any size instead of upstream's fixed 8 px. Keyword, token and stack-count icons start
+  below the name bar, so they never hide the name. The P/T badge is centred on the bottom edge (it hangs
+  half off the tile) with even padding, and it turns with the card when tapped. Tiles grow with the window
+  (up to about 168 px wide) and shrink to fit; the layout reserves room for the badge's overhang.
 - **Zones.** Creatures and planeswalkers in the middle; **lands bottom-left**; **enchantments, artifacts and
   everything else bottom-right**. The opponent's board is the mirror image, packed into the upper part.
 - **Your board gets the room.** In a two-player game your battlefield gets about 62 % of the height and the
-  opponent's about 38 %, instead of the two being sized to match.
+  opponent's about 38 %, instead of the two being sized to match. In a multiplayer pod every cell gets an
+  equal share: no seat is favoured.
+- **The opponent's hand floats.** It is face down and never clicked, so it no longer has a row of its own.
+  In a two-player game it floats at the top of the window *behind* the opponent's tiles, and the row above
+  their board shrinks to a strip that clears the corner buttons. In a pod each seat's fan is tucked partly
+  behind its name plate (the lower half of the cards still shows, so you can count them), and the board
+  starts higher. Top and bottom rows use the same fan, and your own cell reserves the same trimmed band so
+  the bottom boards line up. **Your own hand is unchanged**: it is read and clicked, so nothing covers it.
+- **The seat rail is a row.** In a pod the list of seats (life, hand count, the Overview and Follow
+  toggles) runs along the top of the window instead of down the left edge, which gives the board that column
+  back. Team games keep their grouped column, and phones keep the compact one.
+- **Waiting on the opponent.** While the game is waiting on a player (they hold priority and you have nothing
+  to answer, or the server reports them deciding), a small spinner appears beside their name after a short
+  delay, so an instant pass doesn't flash it. It never shows for you, once the game is over, or when
+  spectating.
 - **Tapped permanents** tilt about 15° (`ARENA_TAP_TILT_DEG`), turn grey, and carry a tap icon. They only tilt
   slightly, so the grey wash and icon are what mark them. The layout reserves the tilted footprint, so
   tapping never overlaps a neighbour.
