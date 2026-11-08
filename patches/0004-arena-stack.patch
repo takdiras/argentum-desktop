@@ -1,0 +1,241 @@
+diff --git a/web-client/src/components/game/board/StackZone.tsx b/web-client/src/components/game/board/StackZone.tsx
+index cf2616e..772a479 100644
+--- a/web-client/src/components/game/board/StackZone.tsx
++++ b/web-client/src/components/game/board/StackZone.tsx
+@@ -15,6 +15,9 @@ import { chosenModeGroupsForStack, groupStackCards, type StackGroup } from './st
+ import { zoneCardTargetLabels } from './graveyardTargets'
+ import { YieldContextMenu } from './YieldContextMenu'
+ import { findYield, yieldTags, YIELD_TONE } from '../yields'
++import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
++import { arenaStackMetrics } from '@/desktop/arena/arenaStackMetrics'
++import { YieldDots } from '@/desktop/arena/YieldDots'
+ 
+ /**
+  * Stack display - shows spells/abilities waiting to resolve.
+@@ -28,6 +31,9 @@ import { findYield, yieldTags, YIELD_TONE } from '../yields'
+ export function StackDisplay() {
+   const stackCards = useStackCards()
+   const responsive = useResponsiveContext()
++  // Arena layout: a larger stack card and effect text that reads at a glance (null = upstream's sizes).
++  const arena = useArenaLayout()
++  const sm = arena ? arenaStackMetrics(responsive) : null
+   const hoverCard = useGameStore((state) => state.hoverCard)
+   const openCardMenuOnTap = useOpenCardMenuOnTap()
+   const targetingState = useGameStore((state) => state.targetingState)
+@@ -143,7 +149,7 @@ export function StackDisplay() {
+     || (decisionSelectionState?.selectedOptions.includes(card.id) ?? false)
+ 
+   // Offset between cards - shows a sliver of each card below
+-  const cardOffset = 25
++  const cardOffset = sm ? sm.cardOffset : 25
+   // Top of stack (most recently cast, resolves first) is last in the array
+   const topCard = stackCards[stackCards.length - 1]
+ 
+@@ -154,8 +160,8 @@ export function StackDisplay() {
+         return sourceId ? gameState?.cards[sourceId] : null
+       })()
+     : null
+-  const stackImageWidth = responsive.isMobile ? 55 : 140
+-  const stackImageHeight = responsive.isMobile ? 77 : 196
++  const stackImageWidth = sm ? sm.imageWidth : responsive.isMobile ? 55 : 140
++  const stackImageHeight = sm ? sm.imageHeight : responsive.isMobile ? 77 : 196
+   // A sideways-printed card (split layout, Room, battle) keeps its full card size and is turned
+   // to lie landscape: `stackImageHeight` wide and `stackImageWidth` tall. The column widens to fit
+   // it rather than the card shrinking to the column, which left a battle too small to read.
+@@ -257,7 +263,7 @@ export function StackDisplay() {
+             <img
+               src={faceDown
+                 ? faceDownImageUrl(card.faceDownMode)
+-                : getCardImageUrl(card.name, card.imageUri, 'small')}
++                : getCardImageUrl(card.name, card.imageUri, sm ? 'normal' : 'small')}
+               alt={faceDown ? 'Face-down spell' : card.name}
+               style={{
+                 ...styles.stackItemImage,
+@@ -312,7 +318,7 @@ export function StackDisplay() {
+                 background: 'rgba(14, 10, 22, 0.88)',
+                 border: `1px solid ${tone.border}`,
+                 color: tone.fg,
+-                fontSize: responsive.isMobile ? 7 : 9,
++                fontSize: sm ? sm.overlayFont : responsive.isMobile ? 7 : 9,
+                 fontWeight: 800,
+                 letterSpacing: '0.02em',
+                 whiteSpace: 'nowrap',
+@@ -369,7 +375,7 @@ export function StackDisplay() {
+               }}
+             >
+               <span aria-hidden style={{ width: 7, height: 7, borderRadius: '50%', background: meta.seat.base, boxShadow: `0 0 4px ${meta.seat.base}`, flexShrink: 0 }} />
+-              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.02em', color: meta.seat.bright, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
++              <span style={{ fontSize: sm ? sm.overlayFont : 9, fontWeight: 800, letterSpacing: '0.02em', color: meta.seat.bright, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                 {meta.name}
+               </span>
+             </div>
+@@ -561,13 +567,22 @@ export function StackDisplay() {
+       maxHeight: '60vh',
+       overflowY: 'auto',
+       maxWidth: 'calc(100vw - 32px)',
++      ...(sm ? { position: 'relative', padding: sm.panelPadding, backgroundColor: sm.panelBackground, border: sm.panelBorder } : {}),
+     }}>
++      {/* Arena layout: the yield control is three dots in the corner, not a row under the name. */}
++      {sm && topCard?.abilityIdentity && !targetingState && !decisionSelectionState && !pendingDecision && (
++        <YieldDots
++          active={!!findYield(activeYields, topCard.abilityIdentity)}
++          onClick={(e) => openYieldMenuBeside(topCard, e)}
++        />
++      )}
+       {/* Regular stack items */}
+       {stackCards.length > 0 && (
+         <>
+           <div style={{
+             ...styles.stackHeader,
+-            fontSize: responsive.fontSize.small,
++            fontSize: sm ? sm.headerFont : responsive.fontSize.small,
++            ...(sm ? { color: sm.headerColor } : {}),
+           }}>
+             Stack ({stackCards.length})
+           </div>
+@@ -600,12 +615,12 @@ export function StackDisplay() {
+             {/* Card name below top card */}
+             {topCard && (
+               <div style={{
+-                color: '#e0d4f0',
+-                fontSize: responsive.isMobile ? 10 : 11,
+-                fontWeight: 600,
+-                marginTop: 4,
++                color: sm ? sm.nameColor : '#e0d4f0',
++                fontSize: sm ? sm.nameFont : responsive.isMobile ? 10 : 11,
++                fontWeight: sm ? 700 : 600,
++                marginTop: sm ? 8 : 4,
+                 textAlign: 'center',
+-                maxWidth: responsive.isMobile ? 80 : 100,
++                maxWidth: sm ? sm.nameMaxWidth : responsive.isMobile ? 80 : 100,
+                 lineHeight: 1.2,
+               }}>
+                 {topCard.name}
+@@ -614,7 +629,7 @@ export function StackDisplay() {
+             {/* The visible way into yields (right-click still works on every ability). Offered for
+                 the top ability only — the one you're being asked about right now — and only while you
+                 hold priority over it, not behind a decision that covers the board. */}
+-            {topCard?.abilityIdentity && !targetingState && !decisionSelectionState && !pendingDecision && (() => {
++            {!sm && topCard?.abilityIdentity && !targetingState && !decisionSelectionState && !pendingDecision && (() => {
+               const active = findYield(activeYields, topCard.abilityIdentity)
+               return (
+                 <button
+@@ -681,7 +696,7 @@ export function StackDisplay() {
+                 ? { position: 'relative', width: stackImageHeight, height: stackImageWidth, borderRadius: 6, boxShadow: '0 0 12px 4px rgba(255, 107, 53, 0.6)' }
+                 : undefined}>
+                 <img
+-                  src={getCardImageUrl(sourceCard.name, sourceCard.imageUri, 'small')}
++                  src={getCardImageUrl(sourceCard.name, sourceCard.imageUri, sm ? 'normal' : 'small')}
+                   alt={sourceCard.name}
+                   style={{
+                     ...styles.stackItemImage,
+@@ -711,11 +726,11 @@ export function StackDisplay() {
+ 
+           {/* Prompt text describing what the trigger does */}
+           <div style={{
+-            color: '#ccc',
+-            fontSize: responsive.isMobile ? 9 : 10,
++            color: sm ? sm.promptColor : '#ccc',
++            fontSize: sm ? sm.promptFont : responsive.isMobile ? 9 : 10,
+             textAlign: 'center',
+-            maxWidth: 100,
+-            lineHeight: 1.3,
++            maxWidth: sm ? sm.promptMaxWidth : 100,
++            lineHeight: sm ? 1.4 : 1.3,
+           }}>
+             {pendingDecision.prompt}
+           </div>
+@@ -737,11 +752,11 @@ export function StackDisplay() {
+       if (perModeGroups.length > 0) {
+         return (
+           <div style={{
+-            padding: responsive.isMobile ? '4px 6px' : '6px 10px',
+-            backgroundColor: 'rgba(30, 18, 50, 0.85)',
++            padding: sm ? '10px 14px' : responsive.isMobile ? '4px 6px' : '6px 10px',
++            backgroundColor: sm ? sm.textBackground : 'rgba(30, 18, 50, 0.85)',
+             borderRadius: 6,
+-            border: '1px solid rgba(150, 100, 200, 0.3)',
+-            maxWidth: responsive.isMobile ? 140 : 200,
++            border: sm ? sm.textBorder : '1px solid rgba(150, 100, 200, 0.3)',
++            maxWidth: sm ? sm.textBoxMaxWidth : responsive.isMobile ? 140 : 200,
+             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
+             display: 'flex',
+             flexDirection: 'column',
+@@ -750,22 +765,22 @@ export function StackDisplay() {
+             {perModeGroups.map((group, i) => (
+               <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                 <div style={{
+-                  color: '#e0d4f0',
+-                  fontSize: responsive.isMobile ? 9 : 10,
+-                  lineHeight: 1.35,
+-                  fontWeight: 600,
++                  color: sm ? sm.textColor : '#e0d4f0',
++                  fontSize: sm ? sm.textFont : responsive.isMobile ? 9 : 10,
++                  lineHeight: sm ? sm.textLineHeight : 1.35,
++                  fontWeight: sm ? 500 : 600,
+                   display: 'flex',
+                   gap: 4,
+                 }}>
+-                  <span style={{ color: '#b8a8cc' }}>•</span>
++                  <span style={{ color: sm ? sm.bulletColor : '#b8a8cc' }}>•</span>
+                   <span style={{ flex: 1 }}>
+-                    <AbilityText text={group.modeDescription} size={responsive.isMobile ? 9 : 10} />
++                    <AbilityText text={group.modeDescription} size={sm ? sm.textSymbolSize : responsive.isMobile ? 9 : 10} />
+                   </span>
+                 </div>
+                 {group.targetNames.length > 0 && (
+                   <div style={{
+-                    color: '#ffcc66',
+-                    fontSize: responsive.isMobile ? 8 : 9,
++                    color: sm ? sm.targetColor : '#ffcc66',
++                    fontSize: sm ? sm.targetFont : responsive.isMobile ? 8 : 9,
+                     lineHeight: 1.3,
+                     paddingLeft: 10,
+                     fontStyle: 'italic',
+@@ -792,11 +807,11 @@ export function StackDisplay() {
+       if (!displayText && zoneTargets.length === 0) return null
+       return (
+         <div style={{
+-          padding: responsive.isMobile ? '4px 6px' : '6px 10px',
+-          backgroundColor: 'rgba(30, 18, 50, 0.85)',
++          padding: sm ? '10px 14px' : responsive.isMobile ? '4px 6px' : '6px 10px',
++          backgroundColor: sm ? sm.textBackground : 'rgba(30, 18, 50, 0.85)',
+           borderRadius: 6,
+-          border: '1px solid rgba(150, 100, 200, 0.3)',
+-          maxWidth: responsive.isMobile ? 120 : 160,
++          border: sm ? sm.textBorder : '1px solid rgba(150, 100, 200, 0.3)',
++          maxWidth: sm ? sm.textBoxMaxWidth : responsive.isMobile ? 120 : 160,
+           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
+         }}>
+           {/* Never clamped: a cut-off rules sentence ("triggers only once..") reads as a different
+@@ -805,9 +820,10 @@ export function StackDisplay() {
+           <div
+             title={displayText ?? undefined}
+             style={{
+-              color: '#b8a8cc',
+-              fontSize: responsive.isMobile ? 8 : 9,
+-              lineHeight: 1.35,
++              color: sm ? sm.textColor : '#b8a8cc',
++              fontSize: sm ? sm.textFont : responsive.isMobile ? 8 : 9,
++              lineHeight: sm ? sm.textLineHeight : 1.35,
++              fontWeight: sm ? 500 : undefined,
+               textAlign: 'center',
+               whiteSpace: 'pre-line',
+               maxHeight: '14em',
+@@ -816,13 +832,13 @@ export function StackDisplay() {
+               scrollbarWidth: 'thin',
+             }}
+           >
+-            {displayText && <AbilityText text={displayText} size={responsive.isMobile ? 9 : 10} />}
++            {displayText && <AbilityText text={displayText} size={sm ? sm.textSymbolSize : responsive.isMobile ? 9 : 10} />}
+           </div>
+           {zoneTargets.length > 0 && (
+             <div style={{
+               marginTop: displayText ? 4 : 0,
+-              color: '#ffcc66',
+-              fontSize: responsive.isMobile ? 8 : 9,
++              color: sm ? sm.targetColor : '#ffcc66',
++              fontSize: sm ? sm.targetFont : responsive.isMobile ? 8 : 9,
+               lineHeight: 1.3,
+               textAlign: 'center',
+               fontStyle: 'italic',
