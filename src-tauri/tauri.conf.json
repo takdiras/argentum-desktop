@@ -27,6 +27,14 @@
       "devCsp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJCMTJDNEE0RDZGN0U4MzMKUldRejZQZldwTVFTdTN4cjNuLzBldGdwQUtnWjUyWnc3cW1YVHlhVm0wM2xIbXFqeXRQOTdSejQK",
+      "endpoints": [
+        "https://github.com/takdiras/argentum-desktop/releases/latest/download/latest.json"
+      ]
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

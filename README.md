@@ -38,7 +38,7 @@ files into upstream. That keeps upstream's code recognisable and the patches eas
 | `overlay/web-client/src/desktop/` | New files: `backend.ts`, `installDesktopFetch.ts` and the connection status (above), and `PasteSignInLink.tsx` + `signInLink.ts` (sign-in, below). |
 | `overlay/web-client/src/desktop/arena/` | The arena layout: zones, compact card face, sizing solver, stack metrics, settings control. |
 | `overlay/web-client/desktop-midnight-theme.mjs` | The Vite plugin that retints upstream's purples to near-black navy. |
-| `src-tauri/` | The Tauri v2 shell: window config, CSP, and a capability that allows HTTP to `magic.wingedsheep.com` only. |
+| `src-tauri/` | The Tauri v2 shell: window config, CSP, a capability that allows HTTP to `magic.wingedsheep.com` only, the `config.json` loader and the self-updater (see [Updates](#updates)). |
 
 **Why the HTTP plugin?** The production server sends no CORS headers, so a webview served from
 `tauri://localhost` can't `fetch` it. The plugin makes requests from Rust, where CORS doesn't apply.
@@ -255,6 +255,50 @@ has expired, request a new one.
 
 If the server maintainers ever add a redirect or app-link support, a `tauri-plugin-deep-link` handler could
 replace the paste step; nothing here blocks that.
+
+## Updates
+
+Each time the app starts it asks GitHub whether a newer release exists
+(`https://github.com/takdiras/argentum-desktop/releases/latest`). If there is one, it downloads and installs it
+in the background, then asks whether to restart now or keep playing and pick it up next launch. It never
+restarts by itself, so a game in progress isn't cut off. A failed check (offline, no release yet) is ignored.
+`bun run dev` never checks.
+
+**Turn it off** in `config.json`, which the app creates with the defaults on first run:
+
+| OS | Location |
+|----|----------|
+| macOS | `~/Library/Application Support/com.takdiras.argentum-desktop/config.json` |
+| Windows | `%APPDATA%\com.takdiras.argentum-desktop\config.json` |
+| Linux | `~/.config/com.takdiras.argentum-desktop/config.json` |
+
+```json
+{
+  "autoUpdate": false
+}
+```
+
+`autoUpdate` defaults to `true`, including when the key or the whole file is missing. The file is read at
+startup, so restart the app after editing it. A file that isn't valid JSON is ignored (defaults apply) and left
+as it is, with a `[config]` line in the terminal output.
+
+Updates are verified against the public key in `src-tauri/tauri.conf.json` (`plugins.updater.pubkey`); the app
+refuses anything not signed with the matching private key. Only the latest **published** release counts, so a
+draft is invisible to installed apps until you publish it.
+
+### Publishing a release (maintainers)
+
+One-time setup: add the private key as the repository secret `TAURI_SIGNING_PRIVATE_KEY` (and
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` if it has a password). Generate a new pair with
+`bunx tauri signer generate -w ~/.tauri/argentum-desktop.key`, put the printed public key in
+`plugins.updater.pubkey`, and keep the private key out of the repo. **If the key is lost or replaced, apps
+already installed can't verify new releases and must be reinstalled by hand.**
+
+Then, per release: bump the version in `src-tauri/tauri.conf.json`, `Cargo.toml` and `package.json`, push a
+`vX.Y.Z` tag, wait for the draft release to fill up, and **publish** it. Tag builds additionally produce the
+signed update bundles and `latest.json` (`src-tauri/tauri.updater.conf.json` turns that on; local builds and
+PRs don't need the key). Apps older than the first release that includes this feature have no updater, so they
+need one manual install.
 
 ## Known limitations
 
