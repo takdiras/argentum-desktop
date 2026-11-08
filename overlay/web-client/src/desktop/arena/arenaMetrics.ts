@@ -6,8 +6,10 @@
  *   creatures + planeswalkers                (a centred, wrapping block)
  *   lands (left)                  other (right)   (a band along the outer edge)
  *
- * The solver picks the widest card for which every block's wrap lines, plus the gap between the
- * two blocks, fit the slot's height.
+ * The solver gives the creatures the widest card for which the creature block, plus the land/other
+ * band at its smallest readable size, fit the slot's height — then the band takes the biggest tile
+ * that fits what is left. A full band therefore shrinks the lands and enchantments first; creatures
+ * only get smaller once the band is already as small as it is allowed to be.
  */
 
 /** Card height / width. Near-square: an art tile with a name bar, not a full card face. */
@@ -27,8 +29,14 @@ export const arenaMaxCardWidth = (viewportHeight: number): number =>
 /** Narrowest card before the board is just clipped. */
 export const ARENA_MIN_CARD_WIDTH = 40
 
-/** Lands and enchantments/artifacts draw at this fraction of the creature width. */
+/** Lands and enchantments/artifacts draw at most this fraction of the creature width. */
 export const ARENA_BACK_SCALE = 0.8
+
+/**
+ * Smallest tile the land/other band shrinks to before the creatures start shrinking too. Below the
+ * creature-relative size, the band gives up room to the creatures down to this, never past it.
+ */
+export const ARENA_BACK_MIN_WIDTH = 52
 
 /** Extra width GameCard reserves around a card lying sideways (kept in step with its container). */
 export const ARENA_TAP_PAD = 8
@@ -45,7 +53,7 @@ export const ARENA_ZONE_PAD_X = 8
 export const ARENA_ZONE_GAP = 10
 
 /** Horizontal peek of each card stacked behind a group's first. */
-export const ARENA_STACK_OFFSET = 18
+export const ARENA_STACK_OFFSET = 6
 
 /** Share of the band's width lands may use when enchantments share it; the rest is for them. */
 export const ARENA_LAND_SHARE = 0.58
@@ -162,8 +170,8 @@ export function solveArenaLayout(
   const hasLands = counts.lands.count > 0
   const hasOther = counts.other.count > 0
 
-  const evaluate = (width: number) => {
-    const backWidth = Math.max(ARENA_MIN_CARD_WIDTH, Math.round(width * ARENA_BACK_SCALE))
+  /** Wrap lines and total height for creatures `width` wide and the band `backWidth` wide. */
+  const evaluate = (width: number, backWidth: number) => {
     const frontLines = linesFor(counts.front, width, slotWidth, gap)
     const landLines = linesFor(counts.lands, backWidth, hasOther ? slotWidth * ARENA_LAND_SHARE : slotWidth, gap)
     const otherLines = linesFor(counts.other, backWidth, hasLands ? slotWidth * ARENA_OTHER_SHARE : slotWidth, gap)
@@ -175,13 +183,24 @@ export function solveArenaLayout(
       (frontLines > 0 && backLines > 0 ? ARENA_ZONE_GAP : 0)
     return { cardWidth: width, backWidth, frontLines, backLines, height }
   }
+  const layoutOf = (r: ReturnType<typeof evaluate>): ArenaLayout => ({
+    cardWidth: r.cardWidth,
+    backWidth: r.backWidth,
+    frontLines: r.frontLines,
+    backLines: r.backLines,
+  })
 
+  // Creatures are sized first, and keep their width for as long as the band can give way: at each
+  // creature width the band tries its preferred size, then smaller ones down to its floor.
   for (let w = Math.round(maxWidth); w > ARENA_MIN_CARD_WIDTH; w--) {
-    const r = evaluate(w)
-    if (r.height <= slotHeight) return { cardWidth: r.cardWidth, backWidth: r.backWidth, frontLines: r.frontLines, backLines: r.backLines }
+    const preferred = Math.max(ARENA_MIN_CARD_WIDTH, Math.round(w * ARENA_BACK_SCALE))
+    const floor = Math.min(preferred, ARENA_BACK_MIN_WIDTH)
+    for (let b = preferred; b >= floor; b--) {
+      const r = evaluate(w, b)
+      if (r.height <= slotHeight) return layoutOf(r)
+    }
   }
-  const r = evaluate(ARENA_MIN_CARD_WIDTH)
-  return { cardWidth: r.cardWidth, backWidth: r.backWidth, frontLines: r.frontLines, backLines: r.backLines }
+  return layoutOf(evaluate(ARENA_MIN_CARD_WIDTH, ARENA_MIN_CARD_WIDTH))
 }
 
 /**

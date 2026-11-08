@@ -1,0 +1,37 @@
+diff --git a/web-client/src/components/game/card/CardStack.tsx b/web-client/src/components/game/card/CardStack.tsx
+--- a/web-client/src/components/game/card/CardStack.tsx
++++ b/web-client/src/components/game/card/CardStack.tsx
+@@ -1,5 +1,5 @@
+ import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
+-import { arenaTileBox } from '@/desktop/arena/arenaMetrics'
++import { ARENA_STACK_OFFSET, arenaTileBox } from '@/desktop/arena/arenaMetrics'
+ import { memo } from 'react'
+ import type { GroupedCard } from '@/store/selectors.ts'
+ import { visibleStackDepth } from '@/store/selectors.ts'
+@@ -24,6 +24,8 @@
+   count: number
+   onToggle: () => void
+ }) {
++  // Arena: a collapsed stack shows how many cards it holds (the cards behind the first are barely visible).
++  const arena = useArenaLayout()
+   return (
+     <button
+       onClick={(e) => {
+@@ -55,7 +57,7 @@
+         userSelect: 'none',
+       }}
+     >
+-      {expanded ? '⤡' : '⤢'}
++      {expanded ? '⤡' : arena ? count : '⤢'}
+     </button>
+   )
+ }
+@@ -135,7 +137,7 @@
+   }
+ 
+   // Calculate stack offset (how much each card is offset from the previous)
+-  const stackOffset = stackOffsetFor(responsive.isMobile)
++  const stackOffset = arena ? ARENA_STACK_OFFSET : stackOffsetFor(responsive.isMobile)
+ 
+   // Render at most the player's "visible stack layers" preference (default
+   // MAX_VISUAL_STACK_DEPTH) regardless of how many identical members the group

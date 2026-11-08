@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ARENA_BACK_MIN_WIDTH,
   ARENA_BADGE_OVERHANG,
   ARENA_CARD_RATIO,
   ARENA_MAX_CARD_WIDTH,
   ARENA_MIN_CARD_WIDTH,
+  ARENA_STACK_OFFSET,
   ARENA_TAP_TILT_DEG,
   arenaCardHeight,
   arenaCornerRadius,
@@ -58,6 +60,13 @@ describe('arenaTileBox', () => {
   })
 })
 
+describe('stack peek', () => {
+  it('leaves the cards behind a stack almost entirely hidden', () => {
+    expect(ARENA_STACK_OFFSET).toBeLessThanOrEqual(8)
+    expect(ARENA_STACK_OFFSET).toBeGreaterThan(0)
+  })
+})
+
 describe('arenaCornerRadius', () => {
   it('matches a real card: 3 mm on a 63 mm wide card', () => {
     expect(ARENA_CORNER_RATIO).toBeCloseTo(3 / 63, 10)
@@ -101,7 +110,7 @@ describe('linesFor', () => {
 
   it('wraps when the row is too narrow, and counts stacked peeks', () => {
     expect(linesFor(zone(10), 100, 400, GAP)).toBeGreaterThan(linesFor(zone(10), 100, 4000, GAP))
-    expect(linesFor(zone(3, 6), 100, 400, GAP)).toBeGreaterThan(linesFor(zone(3, 0), 100, 400, GAP))
+    expect(linesFor(zone(3, 30), 100, 400, GAP)).toBeGreaterThan(linesFor(zone(3, 0), 100, 400, GAP))
   })
 
   it('gives tapped stacks more room, so a row of tapped lands wraps sooner', () => {
@@ -146,6 +155,19 @@ describe('solveArenaLayout', () => {
   it('draws lands and enchantments smaller than creatures', () => {
     const layout = solveArenaLayout(1000, 400, counts(3, 5, 2), { gap: GAP })
     expect(layout.backWidth).toBeLessThan(layout.cardWidth)
+  })
+
+  it('keeps a lone creature at full size however many lands crowd the band', () => {
+    const lands = solveArenaLayout(900, 400, counts(1, 12, 3), { gap: GAP })
+    expect(lands.cardWidth).toBe(ARENA_MAX_CARD_WIDTH)
+    expect(lands.backWidth).toBeLessThan(Math.round(ARENA_MAX_CARD_WIDTH * 0.8))
+    expect(lands.backWidth).toBeGreaterThanOrEqual(ARENA_BACK_MIN_WIDTH)
+  })
+
+  it('shrinks creatures only once the band is already at its floor', () => {
+    const layout = solveArenaLayout(900, 260, counts(24, 30, 6), { gap: GAP })
+    expect(layout.cardWidth).toBeLessThan(ARENA_MAX_CARD_WIDTH)
+    expect(layout.backWidth).toBeLessThanOrEqual(ARENA_BACK_MIN_WIDTH)
   })
 
   it('honours a smaller maximum width', () => {
