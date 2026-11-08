@@ -111,7 +111,7 @@ index f390978..9fccbc6 100644
            {backRow}
            {renderDivider()}
 diff --git a/web-client/src/components/game/card/GameCard.tsx b/web-client/src/components/game/card/GameCard.tsx
-index f3632a4..1fcc332 100644
+index f3632a4..6a86498 100644
 --- a/web-client/src/components/game/card/GameCard.tsx
 +++ b/web-client/src/components/game/card/GameCard.tsx
 @@ -6,6 +6,9 @@ import type { ClientCard, EntityId, LegalActionInfo } from '@/types'
@@ -120,7 +120,7 @@ index f3632a4..1fcc332 100644
  import { getCardImageUrl, getScryfallFallbackUrl, faceDownImageUrl } from '@/utils/cardImages.ts'
 +import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
 +import { ArenaCardFace } from '@/desktop/arena/ArenaCardFace'
-+import { ARENA_CARD_RATIO, ARENA_TAP_TILT_DEG, arenaTiltedHeight, arenaTiltedWidth } from '@/desktop/arena/arenaMetrics'
++import { ARENA_CARD_RATIO, ARENA_TAP_TILT_DEG, arenaCornerRadius, arenaTiltedHeight, arenaTiltedWidth } from '@/desktop/arena/arenaMetrics'
  import { useInteraction } from '@/hooks/useInteraction.ts'
  import { useOpenCardMenuOnTap } from '@/hooks/useOpenCardMenuOnTap.ts'
  import { isGhostMouseEvent, noteTouchInteraction } from '@/utils/ghostMouse.ts'
@@ -167,7 +167,17 @@ index f3632a4..1fcc332 100644
  
    // A sideways card rotates about its center, so its visible band is only `width` tall and
    // sits (height - width) / 2 inside the box top *and* bottom. Left there it floats: a tapped
-@@ -1280,7 +1288,9 @@ function GameCardImpl({
+@@ -1239,7 +1247,8 @@ function GameCardImpl({
+         // reads as the board settling rather than everything jumping. The same
+         // `transform` leg animates the 90deg turn when the permanent taps or untaps.
+         ...(battlefield ? { transition: prefersReducedMotion() ? CARD_REDUCED_MOTION_TRANSITION : CARD_RESIZE_TRANSITION } : {}),
+-        borderRadius: responsive.isMobile ? 4 : 8,
++        // Arena tiles keep a real card's corner proportion; upstream's fixed radius suits a full-size card.
++        borderRadius: compactFace ? arenaCornerRadius(width) : responsive.isMobile ? 4 : 8,
+         cursor,
+         border: isBeheldPulsing ? '3px solid #eab308' : borderStyle,
+         pointerEvents: 'auto',
+@@ -1280,7 +1289,9 @@ function GameCardImpl({
        }}
      >
        {/* Legacy art-only token images need a generated frame; full token-card images render directly. */}
@@ -178,7 +188,7 @@ index f3632a4..1fcc332 100644
          <div style={{
            ...styles.tokenFrame,
            background: getTokenFrameGradient(card.colors),
-@@ -3022,7 +3032,7 @@ function GameCardImpl({
+@@ -3022,7 +3033,7 @@ function GameCardImpl({
          width: containerWidth,
          height: containerHeight,
          display: 'flex',

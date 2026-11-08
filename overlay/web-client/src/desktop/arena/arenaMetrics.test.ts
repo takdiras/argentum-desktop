@@ -5,6 +5,8 @@ import {
   ARENA_MIN_CARD_WIDTH,
   ARENA_TAP_TILT_DEG,
   arenaCardHeight,
+  arenaCornerRadius,
+  ARENA_CORNER_RATIO,
   arenaTiltedHeight,
   arenaTiltedWidth,
   linesFor,
@@ -24,6 +26,23 @@ describe('arenaCardHeight', () => {
   it('is a near-square tile, shorter than the 1.4 full card', () => {
     expect(ARENA_CARD_RATIO).toBeLessThan(1.4)
     expect(arenaCardHeight(100)).toBe(90)
+  })
+})
+
+describe('arenaCornerRadius', () => {
+  it('matches a real card: 3 mm on a 63 mm wide card', () => {
+    expect(ARENA_CORNER_RATIO).toBeCloseTo(3 / 63, 10)
+    expect(arenaCornerRadius(63)).toBe(3)
+    expect(arenaCornerRadius(126)).toBe(6)
+  })
+
+  it('is smaller than upstream\'s fixed 8 px at every size the layout draws', () => {
+    for (const w of [40, 76, 95, 110, 132]) expect(arenaCornerRadius(w)).toBeLessThan(8)
+  })
+
+  it('scales with the tile and never drops below 2 px', () => {
+    expect(arenaCornerRadius(132)).toBeGreaterThan(arenaCornerRadius(76))
+    expect(arenaCornerRadius(20)).toBe(2)
   })
 })
 

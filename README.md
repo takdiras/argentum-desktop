@@ -83,7 +83,8 @@ choice is stored in `localStorage` only; it is never sent to the server.
 - **Compact cards.** A permanent is a name bar over its art, about a third less area than a full card. Power
   and toughness sit at the bottom-right. Counters, keywords, targeting highlights and the hover preview
   (which still shows the whole card) are unchanged, because the compact face is drawn by upstream's own
-  `GameCard`.
+  `GameCard`. Corners keep a real card's proportion (3 mm on 63 mm, about 4.8% of the width), so they match
+  an actual card at any size instead of upstream's fixed 8 px.
 - **Zones.** Creatures and planeswalkers in the middle; **lands bottom-left**; **enchantments, artifacts and
   everything else bottom-right**. The opponent's board is the mirror image, packed into the upper part.
 - **Your board gets the room.** In a two-player game your battlefield gets about 62 % of the height and the

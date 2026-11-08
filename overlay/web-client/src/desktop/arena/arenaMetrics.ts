@@ -38,6 +38,16 @@ export const ARENA_OTHER_SHARE = 0.38
 export const arenaCardHeight = (width: number): number => Math.round(width * ARENA_CARD_RATIO)
 
 /**
+ * A real card's corner radius is 3 mm on a card 63 mm wide. The tile keeps that proportion, so its
+ * corners match an actual card at any size. Upstream's fixed 8 px was tuned for a full 125 px card
+ * and reads as noticeably rounder on a smaller tile.
+ */
+export const ARENA_CORNER_RATIO = 3 / 63
+
+/** Corner radius in px for a tile `width` wide: never below 2 px, so a tiny tile still has a corner. */
+export const arenaCornerRadius = (width: number): number => Math.max(2, Math.round(width * ARENA_CORNER_RATIO * 10) / 10)
+
+/**
  * How far a tapped permanent turns. Deliberately a tilt, not upstream's 90° — an arena tile is
  * nearly square, so lying it on its side barely changes its shape and reads as "rotated" rather
  * than "tapped". The grey wash and tap icon in `ArenaCardFace` carry the rest of the signal.
