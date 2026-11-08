@@ -1,6 +1,6 @@
 {
   "name": "argentum-desktop",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Tauri desktop client for Argentum Engine (https://magic.wingedsheep.com)",
   "scripts": {
