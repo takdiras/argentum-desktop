@@ -1,0 +1,203 @@
+diff --git a/web-client/src/components/game/GameBoard.tsx b/web-client/src/components/game/GameBoard.tsx
+index f2adb20..d0e3358 100644
+--- a/web-client/src/components/game/GameBoard.tsx
++++ b/web-client/src/components/game/GameBoard.tsx
+@@ -38,6 +38,8 @@ import { useBoardGroups } from './board/useBoardGroups'
+ import { usePooledBattlefieldLayout } from './board/usePooledBattlefieldLayout'
+ import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
+ import { ARENA_OPPONENT_ROW_WEIGHT, ARENA_PLAYER_ROW_WEIGHT } from '@/desktop/arena/arenaMetrics'
++import { arenaHandTuck, arenaOpponentHandReservation } from '@/desktop/arena/arenaHand'
++import { railIsHorizontal, railViewportIsCompact } from '@/desktop/arena/arenaRail'
+ import { CardPreview } from './card'
+ import { EmotePicker } from '../tableTalk/EmotePicker'
+ import { ChatButton } from '@/components/messages/ChatButton'
+@@ -272,8 +274,14 @@ export function GameBoard({ spectatorMode = false, topOffset = 0 }: GameBoardPro
+   }, [isMulti, overviewFits, overviewDefaultKey])
+ 
+   // Grid row 1: keeps the battlefield clear of the fixed/absolute opponent hand.
+-  const oppHandReservation =
+-    responsive.smallCardHeight + effectiveTopOffset + responsive.opponentHandBattlefieldGap
++  // Arena layout: the opponent's hand (face down, never clicked) floats behind their battlefield, so its row
++  // shrinks to a strip that keeps the top-corner controls clear. Your own hand is left exactly as it was.
++  const floatingHands = useArenaLayout()
++  const oppHandReservation = floatingHands
++    ? effectiveTopOffset + arenaOpponentHandReservation(responsive.smallCardHeight)
++    : responsive.smallCardHeight + effectiveTopOffset + responsive.opponentHandBattlefieldGap
++  // ...and the multiplayer seat rail runs along the top instead of down the left edge, so the board keeps that column.
++  const railRow = railIsHorizontal(floatingHands, isTeamGame, railViewportIsCompact(responsive))
+   // Grid row 5: keeps the battlefield clear of the fixed player hand.
+   const playerHandReservation =
+     (spectatorMode ? responsive.smallCardHeight : responsive.cardHeight) + responsive.handBattlefieldGap
+@@ -302,8 +310,9 @@ export function GameBoard({ spectatorMode = false, topOffset = 0 }: GameBoardPro
+   // Arena layout: a fixed split that favours your own battlefield; the opponent's board is
+   // packed into the smaller upper share instead of the two being sized to match.
+   const arenaLayout = useArenaLayout()
+-  const opponentRowWeight = arenaLayout ? ARENA_OPPONENT_ROW_WEIGHT : pooledLayout ? Math.max(1, Math.round(pooledLayout.opponentHeight)) : 1
+-  const playerRowWeight = arenaLayout ? ARENA_PLAYER_ROW_WEIGHT : pooledLayout ? Math.max(1, Math.round(pooledLayout.playerHeight)) : 1
++  // (A pod keeps equal rows: its cells all share the one strip, so no seat is favoured.)
++  const opponentRowWeight = arenaLayout && !isMulti ? ARENA_OPPONENT_ROW_WEIGHT : pooledLayout ? Math.max(1, Math.round(pooledLayout.opponentHeight)) : 1
++  const playerRowWeight = arenaLayout && !isMulti ? ARENA_PLAYER_ROW_WEIGHT : pooledLayout ? Math.max(1, Math.round(pooledLayout.playerHeight)) : 1
+ 
+   // Confirm mana selection: if pipeline is active, advance it; otherwise build
+   // modified LegalActionInfo with Explicit payment and route through executeAction
+@@ -1050,7 +1059,7 @@ export function GameBoard({ spectatorMode = false, topOffset = 0 }: GameBoardPro
+               // column, and every cell's top (name plates, zone piles) clear of the
+               // Fullscreen/Concede button row (single view centers one full-width
+               // board below the hand reservation, so no clash there).
+-              paddingLeft: multiView ? railReservedWidth(responsive) : 0,
++              paddingLeft: multiView && !railRow ? railReservedWidth(responsive) : 0,
+               // The 48px clears the Fullscreen / Concede button row, which only occupies the two
+               // top *corners*. A team table has just two enemy cells, and their plates sit at the
+               // quarter marks with the shared-life banner between them — none of the three is in a
+@@ -1489,7 +1498,7 @@ export function GameBoard({ spectatorMode = false, topOffset = 0 }: GameBoardPro
+             overflow: 'hidden',
+             minHeight: 0,
+             minWidth: 0,
+-            paddingLeft: railReservedWidth(responsive),
++            paddingLeft: railRow ? 0 : railReservedWidth(responsive),
+             boxSizing: 'border-box',
+           }}
+         >
+@@ -2687,7 +2696,11 @@ function SelfBottomCell({
+   spectatorMode: boolean
+   hijackedSurfaceStyle?: React.CSSProperties
+ }) {
+-  const { cellRef, handBand } = useCellHandMetrics()
++  const { cellRef, handBand: fullHandBand } = useCellHandMetrics()
++  // Arena layout: the opponent cells' fans are tucked behind their name plates, so this cell reserves
++  // the same trimmed band and the bottom boards stay aligned.
++  const arenaCell = useArenaLayout()
++  const handBand = arenaCell ? fullHandBand - arenaHandTuck(fullHandBand) : fullHandBand
+   const plateAtBottom = showPlate && plateAnchor === 'bottom'
+   return (
+     <div
+diff --git a/web-client/src/components/game/OpponentRail.tsx b/web-client/src/components/game/OpponentRail.tsx
+index 8ff5d00..82ca154 100644
+--- a/web-client/src/components/game/OpponentRail.tsx
++++ b/web-client/src/components/game/OpponentRail.tsx
+@@ -1,3 +1,5 @@
++import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
++import { RAIL_ROW_CSS, RAIL_ROW_INSET_LEFT, RAIL_ROW_INSET_RIGHT, RAIL_ROW_TOP, railIsHorizontal } from '@/desktop/arena/arenaRail'
+ import { useEffect, useMemo, useRef, useState } from 'react'
+ import type React from 'react'
+ import { useGameStore } from '@/store/gameStore'
+@@ -137,6 +139,8 @@ export function OpponentRail({
+   const teamMode = isTeamGame && viewerTeam != null && !spectatorMode
+   // Only 2HG pools life per team; Team vs. Team groups by team but shows per-player life on chips.
+   const sharedLife = useIsSharedLifeTeamGame()
++  // Arena layout: the rail runs as a row along the top instead of a column down the left edge.
++  const arenaRail = useArenaLayout()
+   if (opponents.length <= 1) return null
+ 
+   const teammates = teamMode ? opponents.filter((o) => teamMap[o.playerId] === viewerTeam) : []
+@@ -154,10 +158,12 @@ export function OpponentRail({
+   const top = (railCompact(responsive) ? 46 : 54) + topOffset
+   const left = railCompact(responsive) ? 8 : 12
+   const columnWidth = chipSizing(responsive).width
++  const horizontal = railIsHorizontal(arenaRail, teamMode, railCompact(responsive))
+ 
+   return (
+     <div
+       data-opponent-rail
++      data-rail-horizontal={horizontal || undefined}
+       style={{
+         position: 'fixed',
+         top,
+@@ -172,6 +178,20 @@ export function OpponentRail({
+         zIndex: 120,
+         pointerEvents: 'none',
+         maxHeight: `calc(100vh - ${top + 16}px)`,
++        // Arena: a row between the corner buttons, the chips sharing the width.
++        ...(horizontal
++          ? ({
++              top: RAIL_ROW_TOP + topOffset,
++              left: RAIL_ROW_INSET_LEFT,
++              right: RAIL_ROW_INSET_RIGHT,
++              width: 'auto',
++              flexDirection: 'row',
++              alignItems: 'center',
++              gap: 6,
++              maxHeight: undefined,
++              '--rail-chip-max': `${columnWidth}px`,
++            } as React.CSSProperties)
++          : null),
+       }}
+     >
+       <style>{`
+@@ -197,6 +217,7 @@ export function OpponentRail({
+           0%, 100% { transform: translateX(0); opacity: 0.85; }
+           50% { transform: translateX(2px); opacity: 1; }
+         }
++        ${RAIL_ROW_CSS}
+       `}</style>
+       {teamMode ? (
+         <>
+diff --git a/web-client/src/components/game/board/OpponentBoardArea.tsx b/web-client/src/components/game/board/OpponentBoardArea.tsx
+index cba42cf..622d48b 100644
+--- a/web-client/src/components/game/board/OpponentBoardArea.tsx
++++ b/web-client/src/components/game/board/OpponentBoardArea.tsx
+@@ -1,3 +1,5 @@
++import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
++import { ARENA_OPPONENT_HAND_Z, arenaHandTuck } from '@/desktop/arena/arenaHand'
+ import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+ import type React from 'react'
+ import type { RefObject } from 'react'
+@@ -227,9 +229,12 @@ export function OpponentBoardArea({
+     handHeight: cellHandHeight,
+     handBand: cellHandBand,
+   } = useCellHandMetrics()
++  // Arena layout: seat cells tuck their face-down fan behind the name plate (see `handTuck`).
++  const arenaCells = useArenaLayout()
+   // A bottom-half cell's board is oriented like a player's own, so its hand hangs the same way
+-  // as yours (face toward the bottom edge) rather than inverted like an opponent's.
+-  const cellHandInverted = !bottomHalf && !(isAlly && hideHand)
++  // as yours (face toward the bottom edge) rather than inverted like an opponent's. Under the arena layout
++  // every opponent cell, top row or bottom, uses the same inverted fan, so the two rows look identical.
++  const cellHandInverted = (arenaCells || !bottomHalf) && !(isAlly && hideHand)
+   // A driven seat normally reclaims its full-size interactive fan inside the cell — unless the
+   // hand has been lifted out of the cell entirely ([liftHand]), in which case the lifted copy is
+   // the interactive one and the cell must not draw a second.
+@@ -238,6 +243,8 @@ export function OpponentBoardArea({
+   // reveals from an opponent's hand. [CardRow] draws those face-up among the face-down placeholders,
+   // which a bare count would throw away, so a hand with anything revealed always gets the fan.
+   const revealedInHand = useZoneCards(hand(opponent.playerId)).length > 0
++  // Arena layout (2-player grid): the face-down hand floats behind the opponent's battlefield tiles.
++  const handBehindBoard = arenaCells && layout === 'grid' && !isHijacking
+   const effectiveCellHand = cellHand === 'count' && revealedInHand ? 'fan' : cellHand
+   // How much vertical room this cell owes to the plate + whatever it shows of the hand. A hijacked
+   // hand keeps the full grid-row-1 reservation (it renders the real interactive fan); otherwise it
+@@ -250,9 +257,15 @@ export function OpponentBoardArea({
+   // A teammate (Two-Headed Giant, 2v2, ...) on either row keeps its open hand *below* its lands, hanging from the
+   // bottom edge like your own, so the plate stays alone at the top and the board sits under it.
+   const handBelowBoard = hideHand && isAlly && !drivesOwnHand && effectiveCellHand === 'fan'
++  // Arena layout: a seat cell's face-down fan is tucked up behind the name plate and its band trimmed by the
++  // same amount, so the board gets that height. Not for a driven or ally hand, which are read and clicked.
++  const handTuck =
++    arenaCells && hideHand && !handBelowBoard && !drivesOwnHand && effectiveCellHand === 'fan' && !isAlly
++      ? arenaHandTuck(cellHandOwn)
++      : 0
+   const reservationBand = handBelowBoard
+     ? CELL_PLATE_BAND
+-    : hideHand ? cellHandOwn + CELL_PLATE_BAND : handReservation
++    : hideHand ? cellHandOwn - handTuck + CELL_PLATE_BAND : handReservation
+ 
+   /* Opponent hand — fixed at top of screen in grid layout; absolute inside the
+      strip cell in strip layout (a strip cell starts at the viewport top, so the
+@@ -268,7 +281,7 @@ export function OpponentBoardArea({
+         top: topOffset,
+         left: '50%',
+         transform: 'translateX(-50%)',
+-        zIndex: 50,
++        zIndex: handBehindBoard ? ARENA_OPPONENT_HAND_Z : 50,
+       }}
+     >
+       <CardRow
+@@ -420,7 +433,7 @@ export function OpponentBoardArea({
+             // spills downward instead — that half is reserved in the band below.
+             ...(handBelowBoard
+               ? { bottom: FAN_EDGE_OVERHANG }
+-              : { top: CELL_PLATE_BAND + (cellHandInverted ? FAN_EDGE_OVERHANG : 0) }),
++              : { top: CELL_PLATE_BAND + (cellHandInverted ? FAN_EDGE_OVERHANG : 0) - handTuck }),
+             left: 0,
+             right: 0,
+             height: cellHandHeight,
