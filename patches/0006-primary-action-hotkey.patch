@@ -1,0 +1,57 @@
+diff --git a/web-client/src/components/game/GameBoard.tsx b/web-client/src/components/game/GameBoard.tsx
+index bcbd28c..f2adb20 100644
+--- a/web-client/src/components/game/GameBoard.tsx
++++ b/web-client/src/components/game/GameBoard.tsx
+@@ -1993,6 +1993,7 @@ export function GameBoard({ spectatorMode = false, topOffset = 0 }: GameBoardPro
+                 Attack All
+               </button>
+               <button
++                data-primary-action
+                 onClick={() => confirmCombat(interactionEpoch)}
+                 style={{
+                   ...styles.floatingBarButton,
+@@ -2011,6 +2012,7 @@ export function GameBoard({ spectatorMode = false, topOffset = 0 }: GameBoardPro
+                   combatState.selectedAttackers.some((id) => !combatState.attackerTargets[id])
+                 return (
+                   <button
++                    data-primary-action
+                     onClick={() => confirmCombat(interactionEpoch)}
+                     disabled={awaitingDefender}
+                     title={awaitingDefender ? 'Choose a defender for every attacker first' : undefined}
+@@ -2056,6 +2058,7 @@ export function GameBoard({ spectatorMode = false, topOffset = 0 }: GameBoardPro
+           {Object.keys(combatState.blockerAssignments).length === 0 ? (
+             <>
+               <button
++                data-primary-action
+                 onClick={() => confirmCombat(interactionEpoch)}
+                 style={{
+                   ...styles.floatingBarButton,
+@@ -2069,6 +2072,7 @@ export function GameBoard({ spectatorMode = false, topOffset = 0 }: GameBoardPro
+           ) : (
+             <>
+               <button
++                data-primary-action
+                 onClick={() => confirmCombat(interactionEpoch)}
+                 style={{
+                   ...styles.floatingBarButton,
+@@ -2141,6 +2145,7 @@ export function GameBoard({ spectatorMode = false, topOffset = 0 }: GameBoardPro
+                   </div>
+                 </div>
+                 <button
++                  data-primary-action
+                   onClick={() => confirmDistribute(distributeState.decisionId)}
+                   disabled={!canConfirm}
+                   style={{
+diff --git a/web-client/src/components/ui/ActionMenu.tsx b/web-client/src/components/ui/ActionMenu.tsx
+index 09e6bf3..5c4abd1 100644
+--- a/web-client/src/components/ui/ActionMenu.tsx
++++ b/web-client/src/components/ui/ActionMenu.tsx
+@@ -120,7 +120,7 @@ export function ActionMenu() {
+     const isLongMenu = rowCount >= LONG_MENU_ROWS
+ 
+     return (
+-      <div className={styles.container}>
++      <div className={styles.container} data-blocks-hotkeys>
+         <div className={`${styles.panel} ${isLongMenu ? styles.panelMany : ''}`}>
+           {/* Large card image — rotated landscape for split-layout cards (CR 709):
+               Rooms and classic split spells like Pain // Suffering are printed portrait

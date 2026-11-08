@@ -15,10 +15,14 @@ import { BACKEND_URL } from './backend'
 import { describeError, logFinish, logStart } from './connectionLog'
 import { installWebSocketLogging } from './installWebSocketLogging'
 import { mountConnectionStatus } from './mountConnectionStatus'
+import { installPrimaryActionHotkey } from './hotkeys/primaryActionHotkey'
 
 type FetchFn = typeof window.fetch
 
 function install(): void {
+  // A keyboard shortcut has nothing to do with where the backend lives, so it is always on.
+  installPrimaryActionHotkey()
+
   if (!BACKEND_URL) return
 
   const nativeFetch: FetchFn = window.fetch.bind(window)
