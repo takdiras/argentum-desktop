@@ -24,7 +24,8 @@
     ],
     "security": {
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cards.scryfall.io https://backs.scryfall.io https://api.scryfall.com https://magic.wingedsheep.com; connect-src 'self' ipc: http://ipc.localhost wss://magic.wingedsheep.com https://magic.wingedsheep.com; font-src 'self' data:; worker-src 'self' blob:",
-      "devCsp": null
+      "devCsp": null,
+      "dangerousDisableAssetCspModification": ["style-src"]
     }
   },
   "plugins": {
