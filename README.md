@@ -173,7 +173,8 @@ choice is stored in `localStorage` only; it is never sent to the server.
   tighter the longer the stack is, so the more you scroll the denser the pile gets, and the panel never takes
   more than 90 px of them.
 - **Tapped lands aren't cut off.** The battlefield slot and the opponent's cell no longer clip at their edge in
-  Arena, so a tilted tapped land at the edge of a row shows in full.
+  Arena, so a tilted tapped land at the edge of a row shows in full. The same goes for your own board in a
+  multi-player table: its cell no longer cuts off cards (a tall land column, say) at its frame.
 
 Arena applies to the two-player board and to multiplayer seats; the stack changes apply whenever Arena is on.
 Classic leaves every one of them as upstream draws it.

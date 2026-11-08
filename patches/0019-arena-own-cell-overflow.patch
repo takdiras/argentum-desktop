@@ -1,0 +1,25 @@
+diff --git a/web-client/src/components/game/GameBoard.tsx b/web-client/src/components/game/GameBoard.tsx
+--- a/web-client/src/components/game/GameBoard.tsx
++++ b/web-client/src/components/game/GameBoard.tsx
+@@ -1494,7 +1494,9 @@
+             gridRow: viewerIsObserver ? '4 / 6' : '4 / 5',
+             position: 'relative',
+             display: 'flex',
+-            overflow: 'hidden',
++            // Arena: still clipped sideways (cells are sized to the row), but not vertically, so your
++            // own cell's cards can hang below it.
++            ...(arenaLayout ? { overflowX: 'clip', overflowY: 'visible' } : { overflow: 'hidden' }),
+             minHeight: 0,
+             minWidth: 0,
+             paddingLeft: railRow ? 0 : railReservedWidth(responsive),
+@@ -2711,7 +2713,9 @@
+         height: '100%',
+         display: 'flex',
+         flexDirection: 'column',
+-        overflow: 'hidden',
++        // Arena: your cards may hang past the cell's frame (a tall land column, a tilted tapped tile)
++        // instead of being cut off by it; the Battlefield slot inside is already unclipped.
++        overflow: arenaCell ? 'visible' : 'hidden',
+         position: 'relative',
+       }}
+     >
