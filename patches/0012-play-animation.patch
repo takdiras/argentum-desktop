@@ -1,0 +1,19 @@
+diff --git a/web-client/src/components/game/GameBoard.tsx b/web-client/src/components/game/GameBoard.tsx
+--- a/web-client/src/components/game/GameBoard.tsx
++++ b/web-client/src/components/game/GameBoard.tsx
+@@ -19,6 +19,7 @@
+ import { ActiveYieldsPanel } from './ActiveYieldsPanel'
+ import { AiInsightPanel } from './AiInsightPanel'
+ import { DrawAnimations } from '@/desktop/hand/DrawAnimations'
++import { PlayAnimations } from '@/desktop/hand/PlayAnimations'
+ import { DamageAnimations } from '../animations/DamageAnimations'
+ import { RevealAnimations } from '../animations/RevealAnimations'
+ import { CoinFlipAnimations } from '../animations/CoinFlipAnimations'
+@@ -2350,6 +2351,7 @@
+ 
+       {/* Draw animations */}
+       <DrawAnimations />
++      {!spectatorMode && <PlayAnimations />}
+ 
+       {/* Damage animations */}
+       <DamageAnimations />
