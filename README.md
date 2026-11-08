@@ -11,14 +11,23 @@ the public server at <https://magic.wingedsheep.com>. No backend is bundled or r
 ## How it works
 
 The UI is **not copied** into this repo. `scripts/prepare.sh` fetches the upstream `web-client` at the
-commit pinned in [`UPSTREAM_COMMIT`](UPSTREAM_COMMIT), applies a small patch, and the Tauri shell bundles the
-result.
+commit pinned in [`UPSTREAM_COMMIT`](UPSTREAM_COMMIT), applies the patches in `patches/`, copies in the new
+files from `overlay/`, and the Tauri shell bundles the result.
+
+New behaviour lives in new files wherever possible, and each patch is only the few lines that hook those
+files into upstream. That keeps upstream's code recognisable and the patches easy to rebase.
 
 | Piece | What it does |
 |-------|--------------|
 | `patches/0001-remote-backend.patch` | Edits to existing upstream files: a WebSocket URL from the configured backend, and share links that use the public site instead of `tauri.localhost`. |
 | `patches/0002-desktop-sign-in.patch` | One line in the sign-in modal that shows the paste-the-link step (desktop build only). |
-| `overlay/web-client/src/desktop/` | New files: `backend.ts` (the `VITE_BACKEND_URL` helper), `installDesktopFetch.ts` (routes `/api/*` calls through Tauri's HTTP plugin), and `PasteSignInLink.tsx` + `signInLink.ts` (magic-link sign-in, below). |
+| `patches/0003-arena-layout.patch` | Switches the battlefield, the card face and the board's height split to the arena layout, and adds its setting to Preferences. |
+| `patches/0004-arena-stack.patch` | Larger stack card, bigger and higher-contrast effect text, and the three-dot yield button. |
+| `patches/0005-midnight-theme.patch` | Registers the build-time theme plugin in `vite.config.ts`. |
+| `patches/0006-primary-action-hotkey.patch` | Marks the combat and distribute confirm buttons, and the card action menu, for the Space hotkey. |
+| `overlay/web-client/src/desktop/` | New files: `backend.ts`, `installDesktopFetch.ts` and the connection status (above), and `PasteSignInLink.tsx` + `signInLink.ts` (sign-in, below). |
+| `overlay/web-client/src/desktop/arena/` | The arena layout: zones, compact card face, sizing solver, stack metrics, settings control. |
+| `overlay/web-client/desktop-midnight-theme.mjs` | The Vite plugin that retints upstream's purples to near-black navy. |
 | `src-tauri/` | The Tauri v2 shell: window config, CSP, and a capability that allows HTTP to `magic.wingedsheep.com` only. |
 
 **Why the HTTP plugin?** The production server sends no CORS headers, so a webview served from
@@ -64,6 +73,63 @@ BACKEND_URL=https://my-server.example bun run dev
 
 Also change the URL in `src-tauri/capabilities/default.json` (`http:default` allow list) and in the CSP's
 `connect-src` / `img-src` in `src-tauri/tauri.conf.json`. Both are locked to the production host by default.
+
+## Arena board layout
+
+A compact battlefield, in the spirit of MTG Arena but not a copy of it. Switch it in **Preferences → Board
+layout** (the gear in the game, or `/preferences`): *Arena* (default) or *Classic* (upstream's layout). The
+choice is stored in `localStorage` only; it is never sent to the server.
+
+- **Compact cards.** A permanent is a name bar over its art, about a third less area than a full card. Power
+  and toughness sit at the bottom-right. Counters, keywords, targeting highlights and the hover preview
+  (which still shows the whole card) are unchanged, because the compact face is drawn by upstream's own
+  `GameCard`.
+- **Zones.** Creatures and planeswalkers in the middle; **lands bottom-left**; **enchantments, artifacts and
+  everything else bottom-right**. The opponent's board is the mirror image, packed into the upper part.
+- **Your board gets the room.** In a two-player game your battlefield gets about 62 % of the height and the
+  opponent's about 38 %, instead of the two being sized to match.
+- **Tapped permanents** tilt about 15° (`ARENA_TAP_TILT_DEG`), turn grey, and carry a tap icon. They only tilt
+  slightly, so the grey wash and icon are what mark them. The layout reserves the tilted footprint, so
+  tapping never overlaps a neighbour.
+- **The stack** is larger: the card is about 1.5× wider, the effect text is 15 px in near-white on near-black
+  (it was 9 px in pale purple), and the yield control is a small `⋯` in the panel's top-right corner instead
+  of a pill under the card name.
+
+Arena applies to the two-player board and to multiplayer seats; the stack changes apply whenever Arena is on.
+Classic leaves every one of them as upstream draws it.
+
+## Keyboard
+
+**Space** presses the primary button at the bottom-right, whatever it says at that moment: Pass, End Turn,
+Resolve, To Attackers, Skip Attacking, Attack with N, No Blocks, Confirm Blocks, or the confirm button of a
+damage/counter distribution prompt. A small space-bar keycap on the button shows it's the one Space will press.
+
+It is deliberately cautious:
+
+- It does nothing when the button is disabled, so it can never act when upstream says you can't.
+- It does nothing while you're typing (chat, deck name, any text field), or while a dialog, menu or the card
+  action menu ("Cast X", "Play Swamp") is open, so it can't pass priority behind something you're still reading.
+- Holding Space doesn't repeat; each press is one click.
+- In declare-attackers it picks "Skip Attacking" until you've selected an attacker, then "Attack with N". It
+  never picks "Attack All" for you.
+
+The code is `overlay/web-client/src/desktop/hotkeys/primaryActionHotkey.ts`; the buttons are found by markers
+(`data-learn="pass"` upstream, `data-primary-action` added by `patches/0006`), never by their changing labels.
+
+## Midnight theme
+
+Upstream's near-black surfaces are fine, but about 190 purple `rgba()` and hex colours are hard-coded across
+roughly 45 components (the stack panel, yield menus, decision dialogs, and more). Rather than patch each, a
+small Vite plugin (`overlay/web-client/desktop-midnight-theme.mjs`) retints clearly purple colours (hue
+245–320° and visibly saturated) to deep navy as each file is built: backgrounds get darker, borders stay
+visible, pale lavender text turns cool white. Greys, mana colours and card art are not touched.
+
+Colours that deliberately mean "purple" (the control-hijack highlight, "special" badges) become blue too.
+Build without it by setting `DESKTOP_THEME=original`:
+
+```bash
+DESKTOP_THEME=original bun run dev
+```
 
 ## Connection status
 
