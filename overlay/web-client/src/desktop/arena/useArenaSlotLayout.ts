@@ -8,7 +8,14 @@ import { sizesForCardWidth, useResponsiveContext } from '@/components/game/board
 import type { GroupedCard } from '@/store/selectors.ts'
 import type { BoardStats } from '@/components/game/board/battlefieldLayout'
 import type { ResponsiveSizes } from '@/hooks/useResponsive'
-import { arenaCardHeight, arenaMaxCardWidth, solveArenaLayout, type ArenaCounts } from './arenaMetrics'
+import {
+  ARENA_ZONE_PAD_TOP,
+  ARENA_ZONE_PAD_X,
+  arenaCardHeight,
+  arenaMaxCardWidth,
+  solveArenaLayout,
+  type ArenaCounts,
+} from './arenaMetrics'
 
 export interface ArenaSlotLayout {
   sizes: ResponsiveSizes
@@ -73,7 +80,11 @@ export function useArenaSlotLayout(
       other: { count: otherCount, stackedExtra: Math.round((backExtra * otherCount) / backTotal), tapped: otherTapped },
     }
     const { width, height } = slot !== null && slot.width > 0 && slot.height > 0 ? slot : FALLBACK_SLOT
-    const solved = solveArenaLayout(width, height, counts, { gap: base.cardGap, maxWidth: arenaMaxCardWidth(base.viewportHeight) })
+    // The zones keep a little headroom (see ARENA_ZONE_PAD_*), so tiles are fitted to what is left.
+    const solved = solveArenaLayout(Math.max(1, width - 2 * ARENA_ZONE_PAD_X), Math.max(1, height - ARENA_ZONE_PAD_TOP), counts, {
+      gap: base.cardGap,
+      maxWidth: arenaMaxCardWidth(base.viewportHeight),
+    })
     // The shared helper derives badge/font scale from the card width; the card is shorter than a
     // full card, so its height (used by attachment stacks) is overridden.
     const sized = (w: number): ResponsiveSizes => ({ ...sizesForCardWidth(base, w), battlefieldCardHeight: arenaCardHeight(w) })

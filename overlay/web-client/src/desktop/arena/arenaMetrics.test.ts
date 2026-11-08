@@ -8,6 +8,8 @@ import {
   arenaCardHeight,
   arenaCornerRadius,
   arenaTileBox,
+  ARENA_ZONE_PAD_TOP,
+  ARENA_ZONE_PAD_X,
   ARENA_CORNER_RATIO,
   arenaTiltedHeight,
   arenaTiltedWidth,
@@ -28,6 +30,13 @@ describe('arenaCardHeight', () => {
   it('is a near-square tile, shorter than the 1.4 full card', () => {
     expect(ARENA_CARD_RATIO).toBeLessThan(1.4)
     expect(arenaCardHeight(100)).toBe(90)
+  })
+})
+
+describe('zone headroom', () => {
+  it('covers the 8 px an ungroup toggle hangs above and left of its stack', () => {
+    expect(ARENA_ZONE_PAD_TOP).toBeGreaterThanOrEqual(8)
+    expect(ARENA_ZONE_PAD_X).toBeGreaterThanOrEqual(8)
   })
 })
 

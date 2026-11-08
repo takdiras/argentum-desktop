@@ -13,7 +13,14 @@ import type { ReactNode } from 'react'
 import type { GroupedCard } from '@/store/selectors.ts'
 import type { ResponsiveSizes } from '@/hooks/useResponsive'
 import { ResponsiveContext } from '@/components/game/board/shared'
-import { ARENA_BADGE_OVERHANG, ARENA_LAND_SHARE, ARENA_OTHER_SHARE, ARENA_ZONE_GAP } from './arenaMetrics'
+import {
+  ARENA_BADGE_OVERHANG,
+  ARENA_LAND_SHARE,
+  ARENA_OTHER_SHARE,
+  ARENA_ZONE_GAP,
+  ARENA_ZONE_PAD_TOP,
+  ARENA_ZONE_PAD_X,
+} from './arenaMetrics'
 
 export function ArenaZones({
   isOpponent,
@@ -54,7 +61,7 @@ export function ArenaZones({
         // Opponent: the band goes on top, the creatures toward the middle of the table.
         flexDirection: isOpponent ? 'column-reverse' : 'column',
         gap: hasFront && (hasLands || hasOther) ? ARENA_ZONE_GAP : 0,
-        padding: '0 6px',
+        padding: `${ARENA_ZONE_PAD_TOP}px ${ARENA_ZONE_PAD_X}px 0`,
         boxSizing: 'border-box',
         // Above the opponent's hand, which the arena layout tucks behind the tiles, yet below every
         // floating panel (the stack, the HUD), which all sit higher.

@@ -114,12 +114,16 @@ choice is stored in `localStorage` only; it is never sent to the server.
   tapping never overlaps a neighbour. That includes stacks of identical lands and creatures with attached
   cards: upstream sizes those as if a tapped card turned a full 90°, which left a 15° tile sticking out of
   its box (and clipped at the edge of a row), so they are sized from the tilted tile here.
+- **Ungroup toggles aren't clipped.** The small arrows on a stack of identical cards hang just outside it, so
+  the zones keep 8 px of headroom above and beside their tiles; a row at the edge of a board no longer cuts
+  them off.
 - **Tile size depends on the seat.** Each seat's tiles are the widest that fit that seat's own slot for what it
   has out, capped by the window height. A seat with few permanents therefore draws bigger tiles than a crowded
   one, and the sizes differ between seats in a pod.
 - **The stack** is larger: the card is about 1.5× wider, the effect text is 15 px in near-white on near-black
   (it was 9 px in pale purple), and the yield control is a small `⋯` in the panel's top-right corner instead
-  of a pill under the card name.
+  of a pill under the card name. It paints above the seat name plates and hand fans, which at upstream's z-index would
+  overlap its edge, and below the pass button, notices and every modal.
 
 Arena applies to the two-player board and to multiplayer seats; the stack changes apply whenever Arena is on.
 Classic leaves every one of them as upstream draws it.

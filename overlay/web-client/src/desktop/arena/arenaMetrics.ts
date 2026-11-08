@@ -33,6 +33,14 @@ export const ARENA_BACK_SCALE = 0.8
 /** Extra width GameCard reserves around a card lying sideways (kept in step with its container). */
 export const ARENA_TAP_PAD = 8
 
+/**
+ * Headroom the zones keep above and beside their tiles. Upstream's ungroup toggle (the small arrows on a
+ * stack of identical cards) hangs 8 px above and to the left of its stack, and a row flush against the
+ * edge of a board area clips it. Reserved here, and taken off the slot before the solver fits tiles.
+ */
+export const ARENA_ZONE_PAD_TOP = 8
+export const ARENA_ZONE_PAD_X = 8
+
 /** Gap between the creature block and the land/other band. */
 export const ARENA_ZONE_GAP = 10
 

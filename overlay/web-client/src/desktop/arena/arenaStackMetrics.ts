@@ -8,6 +8,13 @@
  */
 import type { ResponsiveSizes } from '@/hooks/useResponsive'
 
+/**
+ * z-index of the stack panel. The seat name plates and their hand fans sit at 55-57 and the active-yields
+ * panel at 60, and at upstream's 50 they painted over the stack's edge. This puts the stack above all of
+ * them yet below the pass button and controls (100), the notices (120) and every modal and overlay (500+).
+ */
+export const ARENA_STACK_Z = 80
+
 export interface ArenaStackMetrics {
   /** Card art on the stack. */
   imageWidth: number
