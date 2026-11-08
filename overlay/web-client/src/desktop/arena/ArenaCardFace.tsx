@@ -11,6 +11,7 @@ import type { ClientCard } from '@/types'
 import { getCdnArtCropUrl, getScryfallArtCropUrl } from '@/utils/cardImages'
 import { getTokenFrameGradient, getTokenFrameTextColor, useResponsiveContext } from '@/components/game/board/shared'
 import { ARENA_NAME_BAR_SHARE } from './arenaMetrics'
+import { SkeletonImage } from '../cards/SkeletonImage'
 
 /** Art sources to try in order: Scryfall's CDN crop, then the by-name API, then no image. */
 function artSources(card: ClientCard): string[] {
@@ -93,7 +94,7 @@ export function ArenaCardFace({
       </div>
       <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
         {src && (
-          <img
+          <SkeletonImage
             src={src}
             alt={card.name}
             draggable={false}

@@ -1,0 +1,21 @@
+diff --git a/web-client/src/components/game/card/GameCard.tsx b/web-client/src/components/game/card/GameCard.tsx
+--- a/web-client/src/components/game/card/GameCard.tsx
++++ b/web-client/src/components/game/card/GameCard.tsx
+@@ -1,3 +1,4 @@
++import { SkeletonImage } from '@/desktop/cards/SkeletonImage'
+ import { CounterAllocationControls } from './CounterAllocationControls'
+ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+ import { useGameStore } from '@/store/gameStore.ts'
+@@ -1327,9 +1328,11 @@
+         </div>
+       ) : (
+         <>
+-          <img
++          <SkeletonImage
+             src={cardImageUrl}
+             alt={faceDown ? 'Card back' : card.name}
++            label={faceDown ? undefined : card.name}
++            labelFontSize={responsive.fontSize.small}
+             style={imageRotationStyle ? { ...styles.cardImage, ...imageRotationStyle } : styles.cardImage}
+             onError={(e) => {
+               const img = e.currentTarget
