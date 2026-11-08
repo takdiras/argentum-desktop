@@ -1,0 +1,106 @@
+diff --git a/web-client/src/components/game/GameBoard.tsx b/web-client/src/components/game/GameBoard.tsx
+--- a/web-client/src/components/game/GameBoard.tsx
++++ b/web-client/src/components/game/GameBoard.tsx
+@@ -18,7 +18,7 @@
+ import { GameLog } from './GameLog'
+ import { ActiveYieldsPanel } from './ActiveYieldsPanel'
+ import { AiInsightPanel } from './AiInsightPanel'
+-import { DrawAnimations } from '../animations/DrawAnimations'
++import { DrawAnimations } from '@/desktop/hand/DrawAnimations'
+ import { DamageAnimations } from '../animations/DamageAnimations'
+ import { RevealAnimations } from '../animations/RevealAnimations'
+ import { CoinFlipAnimations } from '../animations/CoinFlipAnimations'
+diff --git a/web-client/src/components/game/board/HandZone.tsx b/web-client/src/components/game/board/HandZone.tsx
+--- a/web-client/src/components/game/board/HandZone.tsx
++++ b/web-client/src/components/game/board/HandZone.tsx
+@@ -6,6 +6,8 @@
+ import { styles } from './styles'
+ import { GameCard } from '../card'
+ import { CARD_BACK_IMAGE_URL } from '@/utils/cardImages.ts'
++import { useHandReorder } from '@/desktop/hand/useHandReorder'
++import { usePendingDrawIds } from '@/desktop/hand/usePendingDraws'
+ 
+ /**
+  * Row of cards (hand or other horizontal zone).
+@@ -215,6 +217,14 @@
+ }) {
+   const [, setHoveredIndex] = useState<number | null>(null)
+ 
++  // Your own hand can be rearranged by dragging (a local order: see desktop/hand/handOrder.ts), and a card
++  // you just drew keeps its slot empty until it has flown in from the library (DrawAnimations).
++  const pendingDraws = usePendingDrawIds()
++  const reorderable = interactive && !faceDown && !revealedCards && placeholderCount === 0
++  const handSpacing = fittingWidth * Math.max(0.5, 0.85 - (cards.length + ghostCards.length) * 0.025)
++  const reorder = useHandReorder(cards, { enabled: reorderable, spacing: handSpacing, width: fittingWidth })
++  const handCards = reorderable ? reorder.cards : cards
++
+   // When we have revealed cards in opponent's hand, show both revealed cards AND placeholders
+   const baseCardCount = revealedCards
+     ? cards.length + placeholderCount
+@@ -245,12 +255,12 @@
+   // - Otherwise: show cards normally
+   const baseItems = revealedCards
+     ? [
+-        ...cards.map((card, index) => ({ type: 'card' as const, card, index, showFaceUp: true, isGhost: false })),
++        ...handCards.map((card, index) => ({ type: 'card' as const, card, index, showFaceUp: true, isGhost: false })),
+         ...Array.from({ length: placeholderCount }, (_, i) => ({ type: 'placeholder' as const, index: cards.length + i })),
+       ]
+     : placeholderCount > 0
+       ? Array.from({ length: placeholderCount }, (_, i) => ({ type: 'placeholder' as const, index: i }))
+-      : cards.map((card, index) => ({ type: 'card' as const, card, index, showFaceUp: false, isGhost: false }))
++      : handCards.map((card, index) => ({ type: 'card' as const, card, index, showFaceUp: false, isGhost: false }))
+ 
+   // Append ghost cards (graveyard cards with legal activated abilities)
+   const ghostItems = ghostCards.map((card, i) => ({
+@@ -264,6 +274,7 @@
+ 
+   return (
+     <div
++      ref={reorder.containerRef}
+       style={{
+         position: 'relative',
+         width: totalWidth,
+@@ -286,18 +297,29 @@
+         const verticalOffset = (1 - Math.abs(centerOffset) ** 1.5) * maxVerticalOffset
+ 
+         // Calculate horizontal position
+-        const left = index * cardSpacing
+-
+-        // Z-index: center cards on top
+-        const zIndex = 50 - Math.abs(index - Math.floor(cardCount / 2))
++        const key = item.type === 'card' ? item.card.id : `placeholder-${item.index}`
++        const dragging = item.type === 'card' && reorder.draggingId === item.card.id
++        const left = dragging && reorder.dragLeft !== null ? reorder.dragLeft : index * cardSpacing
+ 
+-        const key = item.type === 'card' ? item.card.id : `placeholder-${item.index}`
++        // Z-index: the rightmost card is on top, each one overlapping the one to its left (the card being
++        // dragged rides above them all)
++        const zIndex = dragging ? 100 : 10 + index
+ 
+         return (
+           <div
+             key={key}
++            data-hand-card-id={item.type === 'card' ? item.card.id : undefined}
++            data-hand-width={fittingWidth}
++            data-hand-rotation={rotation}
++            onPointerDown={item.type === 'card' && !item.isGhost ? reorder.onPointerDown(item.card.id) : undefined}
++            onClickCapture={reorder.onClickCapture}
++            // The card art is an <img>: without this the browser starts dragging the picture itself and takes the pointer.
++            onDragStart={reorderable ? (e) => e.preventDefault() : undefined}
+             style={{
+               position: 'absolute',
++              visibility: item.type === 'card' && pendingDraws.has(item.card.id) ? 'hidden' : undefined,
++              userSelect: reorderable ? 'none' : undefined,
++              WebkitUserSelect: reorderable ? 'none' : undefined,
+               left,
+               ...(inverted
+                 ? { top: edgeMargin, transform: `translateY(${verticalOffset}px) rotate(${rotation}deg)` }
+@@ -305,7 +327,7 @@
+               ),
+               transformOrigin: inverted ? 'top center' : 'bottom center',
+               zIndex,
+-              transition: 'transform 0.12s ease-out, left 0.12s ease-out',
++              transition: dragging ? 'transform 0.12s ease-out' : 'transform 0.12s ease-out, left 0.12s ease-out',
+               cursor: interactive ? 'pointer' : 'default',
+             }}
+             onMouseEnter={() => !inverted && setHoveredIndex(index)}
