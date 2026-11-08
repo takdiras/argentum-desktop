@@ -91,6 +91,9 @@ choice is stored in `localStorage` only; it is never sent to the server.
   below the name bar, so they never hide the name. The P/T badge is centred on the bottom edge (it hangs
   half off the tile) with even padding, and it turns with the card when tapped. Tiles grow with the window
   (up to about 168 px wide) and shrink to fit; the layout reserves room for the badge's overhang.
+- **Chosen colour is a symbol.** A permanent that chose a colour as it entered (Thriving lands, Riptide
+  Replicator…) shows that colour's mana symbol on its tile instead of the word "White". A chosen creature type,
+  mode or number stays as text.
 - **Zones.** Creatures and planeswalkers in the middle; **lands bottom-left**; **enchantments, artifacts and
   everything else bottom-right**. The opponent's board is the mirror image, packed into the upper part.
 - **Your board gets the room.** In a two-player game your battlefield gets about 62 % of the height and the

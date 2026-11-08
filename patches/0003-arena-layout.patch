@@ -111,10 +111,10 @@ index f390978..9fccbc6 100644
            {backRow}
            {renderDivider()}
 diff --git a/web-client/src/components/game/card/GameCard.tsx b/web-client/src/components/game/card/GameCard.tsx
-index f3632a4..dc9b9b9 100644
+index f3632a4..7d94a6d 100644
 --- a/web-client/src/components/game/card/GameCard.tsx
 +++ b/web-client/src/components/game/card/GameCard.tsx
-@@ -6,6 +6,10 @@ import type { ClientCard, EntityId, LegalActionInfo } from '@/types'
+@@ -6,6 +6,11 @@ import type { ClientCard, EntityId, LegalActionInfo } from '@/types'
  import { Color, ColorSymbols, CounterType } from '@/types/enums'
  import { isBattle } from '@/utils/combatTargets'
  import { getCardImageUrl, getScryfallFallbackUrl, faceDownImageUrl } from '@/utils/cardImages.ts'
@@ -122,10 +122,11 @@ index f3632a4..dc9b9b9 100644
 +import { ArenaCardFace } from '@/desktop/arena/ArenaCardFace'
 +import { ARENA_CARD_RATIO, ARENA_NAME_BAR_SHARE, ARENA_TAP_TILT_DEG, arenaCornerRadius, arenaTiltedHeight, arenaTiltedWidth } from '@/desktop/arena/arenaMetrics'
 +import { arenaPtBadgeStyle, arenaPtHang } from '@/desktop/arena/arenaBadgeStyle'
++import { ChosenChipContent } from '@/desktop/arena/ChosenChipContent'
  import { useInteraction } from '@/hooks/useInteraction.ts'
  import { useOpenCardMenuOnTap } from '@/hooks/useOpenCardMenuOnTap.ts'
  import { isGhostMouseEvent, noteTouchInteraction } from '@/utils/ghostMouse.ts'
-@@ -277,6 +281,8 @@ function GameCardImpl({
+@@ -277,6 +282,8 @@ function GameCardImpl({
    const isDraggingThisCard = useGameStore((state) => state.draggingCardId === card.id)
    const isBeheldPulsing = useGameStore((state) => state.beholdPulses.some((p) => p.cardId === card.id))
    const responsive = useResponsiveContext()
@@ -134,7 +135,7 @@ index f3632a4..dc9b9b9 100644
    const openCardMenuOnTap = useOpenCardMenuOnTap()
    const { handleCardClick, handleDoubleClick, executeAction } = useInteraction()
    const dragStartPos = useRef<{ x: number; y: number } | null>(null)
-@@ -378,8 +384,9 @@ function GameCardImpl({
+@@ -378,8 +385,9 @@ function GameCardImpl({
    // the standard "tap = +90° from current" semantic. One flag decides it for every such family
    // (server-side `CardDefinition.isLandscapePrint`), and it's per *face*, so a Siege recast as its
    // portrait back face stops being rotated.
@@ -146,7 +147,7 @@ index f3632a4..dc9b9b9 100644
    // Applied wherever a chip counter-rotates by `-totalRotateDeg`: it has to ease alongside the
    // card's own turn instead of snapping to its final angle the instant the permanent taps.
    const counterRotateTransition = battlefield && !prefersReducedMotion() ? CARD_COUNTER_ROTATE_TRANSITION : undefined
-@@ -486,7 +493,7 @@ function GameCardImpl({
+@@ -486,7 +494,7 @@ function GameCardImpl({
        ? responsive.battlefieldCardWidth
        : responsive.cardWidth
    const width = overrideWidth ?? baseWidth
@@ -155,7 +156,7 @@ index f3632a4..dc9b9b9 100644
    const height = Math.round(width * cardRatio)
  
    // Check if this card can be played/cast (for drag-to-play).
-@@ -1198,8 +1205,14 @@ function GameCardImpl({
+@@ -1198,8 +1206,14 @@ function GameCardImpl({
  
    // Container dimensions - expand width when the card sits sideways (tapped permanents
    // and Rooms always-landscape) to prevent overlap with neighbours.
@@ -172,7 +173,7 @@ index f3632a4..dc9b9b9 100644
  
    // A sideways card rotates about its center, so its visible band is only `width` tall and
    // sits (height - width) / 2 inside the box top *and* bottom. Left there it floats: a tapped
-@@ -1239,7 +1252,9 @@ function GameCardImpl({
+@@ -1239,7 +1253,9 @@ function GameCardImpl({
          // reads as the board settling rather than everything jumping. The same
          // `transform` leg animates the 90deg turn when the permanent taps or untaps.
          ...(battlefield ? { transition: prefersReducedMotion() ? CARD_REDUCED_MOTION_TRANSITION : CARD_RESIZE_TRANSITION } : {}),
@@ -183,7 +184,7 @@ index f3632a4..dc9b9b9 100644
          cursor,
          border: isBeheldPulsing ? '3px solid #eab308' : borderStyle,
          pointerEvents: 'auto',
-@@ -1280,7 +1295,9 @@ function GameCardImpl({
+@@ -1280,7 +1296,9 @@ function GameCardImpl({
        }}
      >
        {/* Legacy art-only token images need a generated frame; full token-card images render directly. */}
@@ -194,7 +195,7 @@ index f3632a4..dc9b9b9 100644
          <div style={{
            ...styles.tokenFrame,
            background: getTokenFrameGradient(card.colors),
-@@ -1383,7 +1400,7 @@ function GameCardImpl({
+@@ -1383,7 +1401,7 @@ function GameCardImpl({
            title={untapRestriction.label}
            style={{
              position: 'absolute',
@@ -203,7 +204,7 @@ index f3632a4..dc9b9b9 100644
              right: 3,
              width: responsive.badges.ptFontSize * 1.7,
              height: responsive.badges.ptFontSize * 1.7,
-@@ -1436,12 +1453,13 @@ function GameCardImpl({
+@@ -1436,12 +1454,13 @@ function GameCardImpl({
          <div style={{
            position: 'absolute',
            right: 4,
@@ -219,7 +220,7 @@ index f3632a4..dc9b9b9 100644
            transition: counterRotateTransition,
          }}>
            <div style={{
-@@ -1454,7 +1472,7 @@ function GameCardImpl({
+@@ -1454,7 +1473,7 @@ function GameCardImpl({
              gap: 2,
              // The anchor is zero-wide, so shrink-to-fit would squeeze every chip to min-content.
              width: 'max-content',
@@ -228,7 +229,7 @@ index f3632a4..dc9b9b9 100644
              transition: counterRotateTransition,
            }}>
              {/* Plague counter badge */}
-@@ -1492,6 +1510,7 @@ function GameCardImpl({
+@@ -1492,6 +1511,7 @@ function GameCardImpl({
                <div style={{
                  ...styles.ptOverlay,
                  ...STAT_CLUSTER_ITEM,
@@ -236,7 +237,7 @@ index f3632a4..dc9b9b9 100644
                  backgroundColor: faceDown
                    ? 'rgba(0, 0, 0, 0.7)'
                    : getPTColor(card.power, card.toughness, card.basePower, card.baseToughness) !== 'white'
-@@ -2273,7 +2292,7 @@ function GameCardImpl({
+@@ -2273,7 +2293,7 @@ function GameCardImpl({
          if (!showHeaderRow && !showCopyOf && !card.isPlotted && !card.isPrepared && !card.isPreparedSpell && !showKeywords) return null
          const markerSize = responsive.badges.ptFontSize * 1.7
          return (
@@ -245,7 +246,7 @@ index f3632a4..dc9b9b9 100644
              {showHeaderRow && (
                <div style={styles.cornerStackRow}>
                  {/* A token's full-card image (a real token print, or a copy of a real card — Dance
-@@ -2397,7 +2416,7 @@ function GameCardImpl({
+@@ -2397,7 +2417,7 @@ function GameCardImpl({
        {faceDown && card.revealedName && (
          <div style={{
            position: 'absolute',
@@ -254,7 +255,28 @@ index f3632a4..dc9b9b9 100644
            right: responsive.badges.badgeInset,
            backgroundColor: 'rgba(0, 0, 0, 0.75)',
            color: '#66ccff',
-@@ -2541,7 +2560,7 @@ function GameCardImpl({
+@@ -2429,8 +2449,18 @@ function GameCardImpl({
+           pointerEvents: 'none',
+           zIndex: 5,
+         }}>
+-          {[card.chosenColor, card.chosenCreatureType, card.chosenMode, card.chosenCardName, card.chosenCardType,
+-            card.chosenNumber != null ? `Number ${card.chosenNumber}` : null].filter(Boolean).join(' ')}
++          {compactFace ? (
++            // Arena: a chosen colour is its mana symbol rather than the word.
++            <ChosenChipContent
++              color={card.chosenColor}
++              rest={[card.chosenCreatureType, card.chosenMode, card.chosenCardName, card.chosenCardType,
++                card.chosenNumber != null ? `Number ${card.chosenNumber}` : null].filter(Boolean).join(' ')}
++              iconSize={Math.max(12, responsive.badges.counterIconFontSize + 5)}
++            />
++          ) : (
++            [card.chosenColor, card.chosenCreatureType, card.chosenMode, card.chosenCardName, card.chosenCardType,
++              card.chosenNumber != null ? `Number ${card.chosenNumber}` : null].filter(Boolean).join(' ')
++          )}
+         </div>
+       )}
+ 
+@@ -2541,7 +2571,7 @@ function GameCardImpl({
        {handCostInfo && (
          <div style={{
            position: 'absolute',
@@ -263,7 +285,7 @@ index f3632a4..dc9b9b9 100644
            right: responsive.badges.badgeInset,
            maxWidth: `calc(100% - ${responsive.badges.badgeInset * 2}px)`,
            backgroundColor: handCostInfo.isReduced || handCostInfo.isIncreased
-@@ -2586,7 +2605,7 @@ function GameCardImpl({
+@@ -2586,7 +2616,7 @@ function GameCardImpl({
        {count > 1 && !faceDown && (
          <div style={{
            position: 'absolute',
@@ -272,7 +294,7 @@ index f3632a4..dc9b9b9 100644
            right: responsive.badges.badgeInset,
            backgroundColor: 'rgba(0, 0, 0, 0.85)',
            color: '#fff',
-@@ -2610,7 +2629,7 @@ function GameCardImpl({
+@@ -2610,7 +2640,7 @@ function GameCardImpl({
        {isDistributeTarget && distributeAllocated > 0 && (
          <div style={{
            position: 'absolute',
@@ -281,7 +303,7 @@ index f3632a4..dc9b9b9 100644
            right: responsive.badges.badgeInset,
            backgroundColor: '#dc2626',
            color: 'white',
-@@ -3022,7 +3041,7 @@ function GameCardImpl({
+@@ -3022,7 +3052,7 @@ function GameCardImpl({
          width: containerWidth,
          height: containerHeight,
          display: 'flex',
