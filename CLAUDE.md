@@ -31,6 +31,10 @@ bunx --bun vitest run -t "name substring"                   # one test by name
 bun run typecheck                                       # tsc --noEmit (upstream's script)
 ```
 
+## CI and releases
+
+`.github/workflows/release.yml` runs overlay tests + typecheck, then builds macOS (arm64 and x64), Linux and Windows with `tauri-action`. PRs and manual runs only build. Pushing a tag `vX.Y.Z` also creates a **draft** GitHub release with the installers, and fails the `check` job unless the tag equals `version` in `src-tauri/tauri.conf.json` (keep that, `Cargo.toml` and `package.json` in step when bumping). The workflow sets `BACKEND_URL` itself; without it the bundle would be a same-origin build that can't reach the server. Builds are unsigned.
+
 ## Architecture: patch + overlay workflow
 
 `scripts/prepare.sh` wipes and rebuilds `vendor/argentum-engine` (git-ignored, sparse checkout of upstream's `web-client/` at the SHA in `UPSTREAM_COMMIT`): applies `patches/*.patch` in filename order with `git apply`, then `cp -R overlay/web-client/. vendor/.../web-client/`, then `bun install`.
