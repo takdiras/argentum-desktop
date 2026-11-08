@@ -28,6 +28,13 @@ files into upstream. That keeps upstream's code recognisable and the patches eas
 | `patches/0007-opponent-waiting-indicator.patch` | Mounts the waiting spinner beside the opponent's name in the life display. |
 | `patches/0008-arena-opponent-hand-and-top-rail.patch` | Floats the opponent's hand, runs the multiplayer seat rail along the top, and keeps pod cells equal. |
 | `patches/0009-arena-tapped-footprint.patch` | Sizes tapped stacks of identical cards, and tapped creatures with attachments, from the tilted tile instead of a quarter-turned card. |
+| `patches/0010-arena-stack-count.patch` | Arena stacks show their card count on the corner chip and hide the cards behind the first. |
+| `patches/0011-hand-draw-and-reorder.patch` | Swaps in the desktop draw animation, hides a drawn card's slot until it lands, puts the rightmost hand card on top, and lets you drag your hand into a new order. |
+| `patches/0012-play-animation.patch` | Mounts the animation that flies a played card to its place on the battlefield. |
+| `patches/0013-card-image-skeleton.patch` | Draws a card's full image through `SkeletonImage`, so it shows a shimmer while loading. |
+| `patches/0014-stack-above-combat-arrows.patch` | Masks the combat arrow layer (and the BLOCKED tag) where the stack panel is, so the stack stays on top of it. |
+| `patches/0015-arena-overflow-visible.patch` | Arena only: stops the battlefield slot and the opponent's grid cell from clipping tilted tapped tiles and ungroup toggles at their edge. |
+| `patches/0016-arena-stack-scroll.patch` | The stack panel stays scrolled to the top of the stack, and older cards pin to its top edge as thin strips. |
 | `overlay/web-client/src/desktop/` | New files: `backend.ts`, `installDesktopFetch.ts` and the connection status (above), and `PasteSignInLink.tsx` + `signInLink.ts` (sign-in, below). |
 | `overlay/web-client/src/desktop/arena/` | The arena layout: zones, compact card face, sizing solver, stack metrics, settings control. |
 | `overlay/web-client/desktop-midnight-theme.mjs` | The Vite plugin that retints upstream's purples to near-black navy. |
@@ -91,6 +98,32 @@ choice is stored in `localStorage` only; it is never sent to the server.
   below the name bar, so they never hide the name. The P/T badge is centred on the bottom edge (it hangs
   half off the tile) with even padding, and it turns with the card when tapped. Tiles grow with the window
   (up to about 168 px wide) and shrink to fit; the layout reserves room for the badge's overhang.
+  Creatures are sized first and keep their width (a lone creature is never shrunk by a crowded
+  land row): lands and enchantments shrink to make room, down to 52 px, before creatures get smaller.
+  A stack of identical cards hides all but a 6 px sliver of the ones behind the first, and its corner
+  chip shows how many cards it holds (click it to ungroup; the ⤡ chip regroups) — patch 0010.
+- **Draw animation and hand order.** A drawn card makes one trip: it leaves the library back showing, flies
+  to its own slot in your hand (turning to that slot's angle), then flips face up there. Your hand holds the
+  slot empty until it lands. An opponent's card flies to their hand and stays face down. In your fan the
+  rightmost card is on top, and you can drag a card sideways to reorder your hand (a local preference, never
+  sent to the server; a drag upward is still drag-to-cast, a click is still a click). Patch 0011; the logic is
+  in `overlay/.../desktop/hand/` (`drawFlight.ts` timeline, `handOrder.ts` ordering, both unit-tested).
+- **Cards fly wherever they go.** A card that changes zone flies there, whoever's it is: to its tile on a
+  battlefield, to the stack, into a hand, or onto a graveyard, exile or library pile. It starts where the card
+  was: under the cursor when you drag it out of your hand and let go (it stays put there until the table shows
+  the play, up to 2 s, and lets go sooner if you are asked for a target or cost), else its hand slot, its tile,
+  its stack item, or the pile it left. It lands on whatever size the board gave the tile, then the real card
+  takes over. Moves are spotted by comparing where every card was before and after each state update
+  (`PlayAnimations.tsx`, with `zoneFlights.ts` and `playFlight.ts` holding the tested logic; patch 0012 mounts
+  it). Flights that start together are staggered, 70 ms apart (at most 0.7 s behind, at most 14 per update), so
+  a board wipe ripples instead of leaving all at once. Stack flights are the quickest (0.24 s). An ability on
+  the stack flies there as a copy from the permanent it came from (found by name and controller, preferring the
+  one that just tapped; its source stays on the field). An opponent's card from their unseen hand or library
+  starts from that pile when it shrank. Draws keep their own animation, and a token or a copy, which has
+  nowhere to come from, just appears.
+- **Image skeletons.** Card images come from Scryfall and take a moment, so a card shows a shimmering dark
+  placeholder (carrying the card's name, on full card faces) until its picture has loaded, then fades the picture in (`desktop/cards/SkeletonImage.tsx`;
+  the arena tile's art uses it directly, full card faces via patch 0013).
 - **Chosen colour is a symbol.** A permanent that chose a colour as it entered (Thriving lands, Riptide
   Replicator…) shows that colour's mana symbol on its tile instead of the word "White". A chosen creature type,
   mode or number stays as text.
@@ -127,6 +160,13 @@ choice is stored in `localStorage` only; it is never sent to the server.
   (it was 9 px in pale purple), and the yield control is a small `⋯` in the panel's top-right corner instead
   of a pill under the card name. It paints above the seat name plates and hand fans, which at upstream's z-index would
   overlap its edge, and below the pass button, notices and every modal.
+- **A long stack stays readable.** The panel is always scrolled to its bottom, where the item that resolves next
+  sits, and jumps back there whenever something is cast or resolves (scroll up to read an older item and it stays
+  put until the stack changes). The cards scrolled away above are pinned to the panel's top edge as thin strips,
+  tighter the longer the stack is, so the more you scroll the denser the pile gets, and the panel never takes
+  more than 90 px of them.
+- **Tapped lands aren't cut off.** The battlefield slot and the opponent's cell no longer clip at their edge in
+  Arena, so a tilted tapped land at the edge of a row shows in full.
 
 Arena applies to the two-player board and to multiplayer seats; the stack changes apply whenever Arena is on.
 Classic leaves every one of them as upstream draws it.
