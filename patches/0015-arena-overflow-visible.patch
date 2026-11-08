@@ -1,0 +1,28 @@
+diff --git a/web-client/src/components/game/board/Battlefield.tsx b/web-client/src/components/game/board/Battlefield.tsx
+index 32d3c54..26573d8 100644
+--- a/web-client/src/components/game/board/Battlefield.tsx
++++ b/web-client/src/components/game/board/Battlefield.tsx
+@@ -103,7 +103,9 @@ export function Battlefield({ isOpponent, playerId, spectatorMode = false }: {
+         // sizing math can fit (cards already at ABSOLUTE_MIN_CARD_WIDTH),
+         // battlefield content must never paint over the center HUD or the
+         // hand — clip it at the slot boundary instead.
+-        overflow: 'clip',
++        // Arena: tapped tiles tilt and stack toggles hang off a tile's corner, so clipping at the slot
++        // edge would cut them; the arena sizing leaves room for the overhang instead.
++        overflow: arena ? 'visible' : 'clip',
+       }}
+     >
+       <ResponsiveContext.Provider value={sizes}>
+diff --git a/web-client/src/components/game/board/OpponentBoardArea.tsx b/web-client/src/components/game/board/OpponentBoardArea.tsx
+index 622d48b..4ddba99 100644
+--- a/web-client/src/components/game/board/OpponentBoardArea.tsx
++++ b/web-client/src/components/game/board/OpponentBoardArea.tsx
+@@ -300,7 +300,7 @@ export function OpponentBoardArea({
+       ref={layout === 'grid' ? areaRef : undefined}
+       style={
+         layout === 'grid'
+-          ? styles.opponentArea
++          ? arenaCells ? { ...styles.opponentArea, overflow: 'visible' } : styles.opponentArea
+           : {
+               // styles.opponentArea minus the grid-row binding — the strip cell
+               // provides the vertical slot instead.
