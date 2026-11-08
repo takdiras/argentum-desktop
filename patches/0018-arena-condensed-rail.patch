@@ -1,0 +1,92 @@
+diff --git a/web-client/src/components/game/OpponentRail.tsx b/web-client/src/components/game/OpponentRail.tsx
+--- a/web-client/src/components/game/OpponentRail.tsx
++++ b/web-client/src/components/game/OpponentRail.tsx
+@@ -1,5 +1,6 @@
+ import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
+-import { RAIL_ROW_CSS, RAIL_ROW_INSET_LEFT, RAIL_ROW_INSET_RIGHT, RAIL_ROW_TOP, railIsHorizontal } from '@/desktop/arena/arenaRail'
++import { RAIL_ROW_CSS, RAIL_ROW_INSET_LEFT, RAIL_ROW_INSET_RIGHT, RAIL_ROW_TOP, railChipsCondensed, railIsHorizontal } from '@/desktop/arena/arenaRail'
++import { RailName } from '@/desktop/arena/RailName'
+ import { useEffect, useMemo, useRef, useState } from 'react'
+ import type React from 'react'
+ import { useGameStore } from '@/store/gameStore'
+@@ -159,11 +160,14 @@
+   const left = railCompact(responsive) ? 8 : 12
+   const columnWidth = chipSizing(responsive).width
+   const horizontal = railIsHorizontal(arenaRail, teamMode, railCompact(responsive))
++  // A crowded row (6 players) shows initials and opens to the full name on hover, so it fits its lane.
++  const condensed = horizontal && railChipsCondensed(opponents.length + (self ? 1 : 0), responsive.viewportWidth)
+ 
+   return (
+     <div
+       data-opponent-rail
+       data-rail-horizontal={horizontal || undefined}
++      data-rail-condensed={condensed || undefined}
+       style={{
+         position: 'fixed',
+         top,
+@@ -538,6 +542,7 @@
+         {isActiveTurn && !tomb && (
+           <span
+             aria-hidden
++            data-rail-turn
+             title={isViewerSeat ? 'Your turn' : 'Active turn'}
+             style={{
+               color: color.bright,
+@@ -575,7 +580,7 @@
+         )}
+ 
+         {!compact && (
+-          <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
++          <span data-rail-name style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+             <span
+               style={{
+                 overflow: 'hidden',
+@@ -587,12 +592,13 @@
+                 color: tomb ? '#666' : color.bright,
+               }}
+             >
+-              {seat.name}
++              <RailName name={seat.name} />
+             </span>
+             {/* "YOU" in normal play; while spectating the seat isn't the viewer, so the tag marks
+                 it as the one anchored to the bottom of the board instead. */}
+             <span
+               aria-hidden
++              data-rail-tag
+               title={isViewerSeat ? undefined : 'Anchored to the bottom of the board'}
+               style={{ fontSize: 9, opacity: 0.75, fontWeight: 600, flexShrink: 0 }}
+             >
+@@ -789,6 +795,7 @@
+   return (
+     <span
+       aria-hidden
++      data-rail-hand-icon
+       style={{
+         display: 'inline-block',
+         width: 8,
+@@ -1119,6 +1126,7 @@
+         {isActiveTurn && !tomb && (
+           <span
+             aria-hidden
++            data-rail-turn
+             title="Active turn"
+             style={{
+               color: seat.bright,
+@@ -1166,7 +1174,7 @@
+             the fixed chip width and truncates, so every chip is the same size. An ally (your
+             2HG teammate) gets an "ALLY" tag so it never reads as an opponent. */}
+         {!compact && (
+-          <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
++          <span data-rail-name style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 5, overflow: 'hidden' }}>
+             <span
+               style={{
+                 overflow: 'hidden',
+@@ -1178,7 +1186,7 @@
+                 color: tomb ? '#666' : seat.bright,
+               }}
+             >
+-              {opponent.name}
++              <RailName name={opponent.name} />
+             </span>
+             {isViewed && viewPinned && !spectatorMode && (
+               <span aria-hidden title="Pinned — follow-the-action paused" style={{ flexShrink: 0 }}>📌</span>

@@ -141,6 +141,9 @@ choice is stored in `localStorage` only; it is never sent to the server.
 - **The seat rail is a row.** In a pod the list of seats (life, hand count, the Overview and Follow
   toggles) runs along the top of the window instead of down the left edge, which gives the board that column
   back. Team games keep their grouped column, and phones keep the compact one.
+  When the row is too crowded to print names (six players on a laptop-sized window), each seat shows
+  its initials, life and hand count, and **hovering a seat opens it to the full name** with a short slide.
+  That keeps the row inside the space between the corner buttons, so it never runs under Concede.
 - **You sit bottom centre at six players.** In a free-for-all with six (or seven) players the table shows
   three boards on the bottom row, and yours is the middle one: the next seat in turn order on your left,
   the previous seat on your right, the rest across the top. With fewer players (or eight) the bottom row has
