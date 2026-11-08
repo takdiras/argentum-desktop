@@ -1,0 +1,42 @@
+diff --git a/web-client/src/components/game/board/StackZone.tsx b/web-client/src/components/game/board/StackZone.tsx
+index 5400cca..7f39954 100644
+--- a/web-client/src/components/game/board/StackZone.tsx
++++ b/web-client/src/components/game/board/StackZone.tsx
+@@ -18,6 +18,8 @@ import { findYield, yieldTags, YIELD_TONE } from '../yields'
+ import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
+ import { ARENA_STACK_Z, arenaStackMetrics } from '@/desktop/arena/arenaStackMetrics'
+ import { YieldDots } from '@/desktop/arena/YieldDots'
++import { stackPinTop } from '@/desktop/arena/arenaStackScroll'
++import { useStackScrollToBottom } from '@/desktop/arena/useStackScrollToBottom'
+ 
+ /**
+  * Stack display - shows spells/abilities waiting to resolve.
+@@ -34,6 +36,11 @@ export function StackDisplay() {
+   // Arena layout: a larger stack card and effect text that reads at a glance (null = upstream's sizes).
+   const arena = useArenaLayout()
+   const sm = arena ? arenaStackMetrics(responsive) : null
++  // Arena: the panel stays scrolled to the top of the stack, and older cards pin to its top edge as thin strips.
++  const stackScrollRef = useStackScrollToBottom(
++    `${stackCards.length}:${stackCards[stackCards.length - 1]?.id ?? ''}`,
++    arena && stackCards.length > 0,
++  )
+   const hoverCard = useGameStore((state) => state.hoverCard)
+   const openCardMenuOnTap = useOpenCardMenuOnTap()
+   const targetingState = useGameStore((state) => state.targetingState)
+@@ -226,6 +233,7 @@ export function StackDisplay() {
+           // landscape card is in the pile, so the overlap is measured against that slot's own height.
+           marginTop: renderIndex === 0 ? 0 : -(opts.prevSlotHeight ?? stackImageHeight) + cardOffset,
+           zIndex: renderIndex + 1, // Later cards (higher index = cast later) on top
++          ...(sm ? { position: 'sticky' as const, top: stackPinTop(renderIndex, slots.length) } : {}),
+           ...seatBorderFor(card.controllerId),
+           ...highlight,
+         }}
+@@ -557,7 +565,7 @@ export function StackDisplay() {
+       zIndex: sm ? ARENA_STACK_Z : 50,
+       maxHeight: '80vh',
+     }}>
+-    <div style={{
++    <div ref={stackScrollRef} style={{
+       display: 'flex',
+       flexDirection: 'column',
+       alignItems: 'center',
