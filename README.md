@@ -27,6 +27,7 @@ files into upstream. That keeps upstream's code recognisable and the patches eas
 | `patches/0006-primary-action-hotkey.patch` | Marks the combat and distribute confirm buttons, and the card action menu, for the Space hotkey. |
 | `patches/0007-opponent-waiting-indicator.patch` | Mounts the waiting spinner beside the opponent's name in the life display. |
 | `patches/0008-arena-opponent-hand-and-top-rail.patch` | Floats the opponent's hand, runs the multiplayer seat rail along the top, and keeps pod cells equal. |
+| `patches/0009-arena-tapped-footprint.patch` | Sizes tapped stacks of identical cards, and tapped creatures with attachments, from the tilted tile instead of a quarter-turned card. |
 | `overlay/web-client/src/desktop/` | New files: `backend.ts`, `installDesktopFetch.ts` and the connection status (above), and `PasteSignInLink.tsx` + `signInLink.ts` (sign-in, below). |
 | `overlay/web-client/src/desktop/arena/` | The arena layout: zones, compact card face, sizing solver, stack metrics, settings control. |
 | `overlay/web-client/desktop-midnight-theme.mjs` | The Vite plugin that retints upstream's purples to near-black navy. |
@@ -110,7 +111,12 @@ choice is stored in `localStorage` only; it is never sent to the server.
   spectating.
 - **Tapped permanents** tilt about 15° (`ARENA_TAP_TILT_DEG`), turn grey, and carry a tap icon. They only tilt
   slightly, so the grey wash and icon are what mark them. The layout reserves the tilted footprint, so
-  tapping never overlaps a neighbour.
+  tapping never overlaps a neighbour. That includes stacks of identical lands and creatures with attached
+  cards: upstream sizes those as if a tapped card turned a full 90°, which left a 15° tile sticking out of
+  its box (and clipped at the edge of a row), so they are sized from the tilted tile here.
+- **Tile size depends on the seat.** Each seat's tiles are the widest that fit that seat's own slot for what it
+  has out, capped by the window height. A seat with few permanents therefore draws bigger tiles than a crowded
+  one, and the sizes differ between seats in a pod.
 - **The stack** is larger: the card is about 1.5× wider, the effect text is 15 px in near-white on near-black
   (it was 9 px in pale purple), and the yield control is a small `⋯` in the panel's top-right corner instead
   of a pill under the card name.

@@ -82,6 +82,18 @@ export const arenaTiltedWidth = (width: number): number =>
 export const arenaTiltedHeight = (width: number): number =>
   Math.ceil(width * Math.sin(TILT_RAD) + arenaCardHeight(width) * Math.cos(TILT_RAD))
 
+/**
+ * The box one tile takes in a row: its own size when upright, the tilted bounding box when tapped.
+ * Anything that lays tiles out (a stack of identical lands, a creature with equipment on it) has to
+ * size itself from this. Upstream's layout code assumes a tapped card turns a full 90 degrees, so it
+ * sizes a tapped card as its height wide; a tile that only tilts 15 degrees overflows that box.
+ */
+export function arenaTileBox(width: number, tapped: boolean): { width: number; height: number } {
+  return tapped
+    ? { width: arenaTiltedWidth(width), height: arenaTiltedHeight(width) }
+    : { width, height: arenaCardHeight(width) }
+}
+
 export interface ZoneCount {
   /** Rendered stacks in the zone. */
   count: number

@@ -1,0 +1,66 @@
+diff --git a/web-client/src/components/game/board/Battlefield.tsx b/web-client/src/components/game/board/Battlefield.tsx
+index 9fccbc6..32d3c54 100644
+--- a/web-client/src/components/game/board/Battlefield.tsx
++++ b/web-client/src/components/game/board/Battlefield.tsx
+@@ -16,6 +16,7 @@ import type { ClientCard, EntityId } from '@/types'
+ import { getCardImageUrl } from '@/utils/cardImages.ts'
+ import { RenderProfiler } from '@/utils/renderProfiler'
+ import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
++import { arenaTileBox } from '@/desktop/arena/arenaMetrics'
+ import { useArenaSlotLayout } from '@/desktop/arena/useArenaSlotLayout'
+ import { ArenaZones } from '@/desktop/arena/ArenaZones'
+ import {
+@@ -243,13 +244,16 @@ function BattlefieldContent({
+     // still signalling that attachments exist.
+     const collapsed = attachments.length >= ATTACHMENT_COLLAPSE_THRESHOLD
+     const visibleAttachments = collapsed ? attachments.slice(0, 1) : attachments
+-    const cardWidth = rowSizes.battlefieldCardWidth
++    // Arena: a tapped host only tilts, so it is laid out as the tilted box rather than as a quarter-turned
++    // card (which would be too narrow for it); nothing else in the stack is treated as turned.
++    const hostBox = arena ? arenaTileBox(rowSizes.battlefieldCardWidth, parentTapped === true) : null
++    const cardWidth = hostBox ? hostBox.width : rowSizes.battlefieldCardWidth
+     const layout = attachmentStackLayout({
+       cardWidth,
+-      cardHeight: rowSizes.battlefieldCardHeight,
++      cardHeight: hostBox ? hostBox.height : rowSizes.battlefieldCardHeight,
+       peek: attachmentPeek,
+-      hostTapped: parentTapped,
+-      attachmentsTapped: visibleAttachments.map((tagged) => tagged.card.isTapped === true),
++      hostTapped: arena ? false : parentTapped,
++      attachmentsTapped: visibleAttachments.map((tagged) => !arena && tagged.card.isTapped === true),
+       // A sideways card is much wider than an upright one, so the default row gap feels
+       // tight next to upright neighbours — reserve a little extra beside it.
+       gutter: responsive.isMobile ? 18 : 28,
+diff --git a/web-client/src/components/game/card/CardStack.tsx b/web-client/src/components/game/card/CardStack.tsx
+index 5b65e1d..4979542 100644
+--- a/web-client/src/components/game/card/CardStack.tsx
++++ b/web-client/src/components/game/card/CardStack.tsx
+@@ -1,3 +1,5 @@
++import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
++import { arenaTileBox } from '@/desktop/arena/arenaMetrics'
+ import { memo } from 'react'
+ import type { GroupedCard } from '@/store/selectors.ts'
+ import { visibleStackDepth } from '@/store/selectors.ts'
+@@ -84,6 +86,7 @@ function CardStackImpl({
+   isOpponentCard: boolean
+ }) {
+   const responsive = useResponsiveContext()
++  const arena = useArenaLayout()
+   const maxLayers = usePreferences((s) => s.prefs.battlefield.maxVisibleLayers)
+   // Store-held (not local state) so the battlefield sizing solver counts an
+   // ungrouped stack as the N cards it renders — see `expandedStackCardIds`.
+@@ -141,9 +144,12 @@ function CardStackImpl({
+   // The group key guarantees every member shares the same tapped state, so the
+   // representative answers for the whole stack (O(1), avoids scanning a horde).
+   const hasAnyTapped = group.card.isTapped
+-  const cardWidth = hasAnyTapped ? responsive.battlefieldCardHeight : responsive.battlefieldCardWidth
++  // Arena tiles only tilt when tapped, so a tapped stack takes the tilted box in both directions; the
++  // quarter-turn sizing below would leave the tilted cards sticking out of it (and clipped at a row's edge).
++  const arenaBox = arena ? arenaTileBox(responsive.battlefieldCardWidth, hasAnyTapped) : null
++  const cardWidth = arenaBox ? arenaBox.width : hasAnyTapped ? responsive.battlefieldCardHeight : responsive.battlefieldCardWidth
+   const totalWidth = cardWidth + stackOffset * (renderedCards.length - 1)
+-  const stackHeight = responsive.battlefieldCardHeight  // Always use full height for consistent alignment
++  const stackHeight = arenaBox ? arenaBox.height : responsive.battlefieldCardHeight  // Always use full height for consistent alignment
+   // Only badge the count when members are hidden behind the cap — small stacks
+   // that are fully visible look exactly as before.
+   const hasHiddenMembers = group.count > renderedCards.length

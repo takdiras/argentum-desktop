@@ -7,6 +7,7 @@ import {
   ARENA_TAP_TILT_DEG,
   arenaCardHeight,
   arenaCornerRadius,
+  arenaTileBox,
   ARENA_CORNER_RATIO,
   arenaTiltedHeight,
   arenaTiltedWidth,
@@ -27,6 +28,24 @@ describe('arenaCardHeight', () => {
   it('is a near-square tile, shorter than the 1.4 full card', () => {
     expect(ARENA_CARD_RATIO).toBeLessThan(1.4)
     expect(arenaCardHeight(100)).toBe(90)
+  })
+})
+
+describe('arenaTileBox', () => {
+  it('is the plain tile when upright', () => {
+    expect(arenaTileBox(100, false)).toEqual({ width: 100, height: 90 })
+  })
+
+  it('is the tilted bounding box when tapped, larger both ways', () => {
+    const box = arenaTileBox(100, true)
+    expect(box).toEqual({ width: arenaTiltedWidth(100), height: arenaTiltedHeight(100) })
+    expect(box.width).toBeGreaterThan(100)
+    expect(box.height).toBeGreaterThan(90)
+  })
+
+  it('is not upstream\'s quarter-turn assumption (a tapped card as wide as it is tall)', () => {
+    // Upstream sizes a tapped card `height` wide: 90 here, narrower than the tilted tile actually is.
+    expect(arenaTileBox(100, true).width).toBeGreaterThan(arenaCardHeight(100))
   })
 })
 
