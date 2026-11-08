@@ -1,0 +1,37 @@
+diff --git a/web-client/src/components/combat/CombatArrows.tsx b/web-client/src/components/combat/CombatArrows.tsx
+--- a/web-client/src/components/combat/CombatArrows.tsx
++++ b/web-client/src/components/combat/CombatArrows.tsx
+@@ -16,6 +16,7 @@
+ import { bandsFromBandIds, computeCombatClique, type CombatClique } from './combatClique'
+ import { BLOCKER_TONE, CliqueCaption, CliqueSpotlight, cliqueBounds, describeFocus, measureClique } from './CombatFocus'
+ import { setCombatFocusBounds } from './combatFocusBounds'
++import { StackCutoutDefs, stackCutoutMask, useStackCutout } from '@/desktop/arena/StackCutoutLayer'
+ 
+ interface Point {
+   x: number
+@@ -380,6 +381,8 @@
+   const isSpectating = useGameStore((state) => state.spectatingState !== null)
+   const pendingDecision = useGameStore((state) => state.pendingDecision)
+   const [mousePos, setMousePos] = useState<Point | null>(null)
++  // Arena layout: the stack stays on top of the arrows and the BLOCKED tag, so they are cut away beneath it.
++  const stackCutout = useStackCutout()
+   const [arrows, setArrows] = useState<ArrowData[]>([])
+   const [attackerArrows, setAttackerArrows] = useState<AttackerArrowData[]>([])
+   const [bundledArrows, setBundledArrows] = useState<BundledArrowData[]>([])
+@@ -938,6 +941,8 @@
+           zIndex: 2000, // Above spectator container (1500)
+         }}
+       >
++        <StackCutoutDefs cutout={stackCutout} />
++        <g mask={stackCutoutMask(stackCutout)}>
+         {/* Attack direction indicators (triangles pointing toward the defender,
+             seat-colored once assigned in multiplayer) */}
+         {attackIndicators.map(({ x, y, direction, attackerId, color, blocked }) => (
+@@ -1104,6 +1109,7 @@
+             dashed
+           />
+         )}
++        </g>
+       </svg>
+       {caption && focusId && focusRect && (
+         <CliqueCaption
