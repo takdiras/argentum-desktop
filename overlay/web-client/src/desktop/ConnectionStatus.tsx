@@ -14,6 +14,7 @@ const COLORS = {
   error: '#f87171',
   pending: '#fbbf24',
   idle: '#94a3b8',
+  cancelled: '#64748b',
 }
 
 function useEntries(): readonly NetEntry[] {
@@ -33,6 +34,7 @@ function describe(e: NetEntry): string {
     return `${e.kind === 'ws' ? 'Connecting' : 'Loading'} ${e.label}…${secs >= 2 ? ` ${secs}s` : ''}`
   }
   if (e.status === 'error') return `Failed: ${what} — ${e.detail || 'unknown error'}`
+  if (e.status === 'cancelled') return `Cancelled: ${what} — ${e.detail || 'cancelled'}`
   return `${what} — ${e.detail}${e.durationMs !== null && e.kind === 'http' ? ` (${e.durationMs} ms)` : ''}`
 }
 
@@ -93,6 +95,7 @@ export function ConnectionStatus() {
   const dot =
     pending.length > 0 ? COLORS.pending
     : latest?.status === 'error' ? COLORS.error
+    : latest?.status === 'cancelled' ? COLORS.idle
     : latest ? COLORS.ok
     : COLORS.idle
 

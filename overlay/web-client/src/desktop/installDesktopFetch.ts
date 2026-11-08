@@ -16,6 +16,7 @@ import { describeError, logFinish, logStart } from './connectionLog'
 import { installWebSocketLogging } from './installWebSocketLogging'
 import { mountConnectionStatus } from './mountConnectionStatus'
 import { installPrimaryActionHotkey } from './hotkeys/primaryActionHotkey'
+import { isCancellation, isDevOnlyEndpoint } from './requestKinds'
 
 type FetchFn = typeof window.fetch
 
@@ -50,6 +51,14 @@ function install(): void {
     const target = resolve(input)
     const url = urlOf(target)
     if (isInternal(url)) return nativeFetch(target, init)
+
+    // A dev-only panel polling an endpoint the remote server doesn't have: answer the 404 it would get
+    // here, instead of sending dozens of requests that can only fail.
+    if (isDevOnlyEndpoint(url, BACKEND_URL!)) {
+      const skipped = logStart({ kind: 'http', method: 'GET', url, transport: 'browser', detail: '' })
+      logFinish(skipped, 'cancelled', 'skipped: dev-only endpoint, not on this server')
+      return new Response(null, { status: 404, statusText: 'Not Found' })
+    }
     const method = (init?.method ?? (typeof target === 'object' && 'method' in target ? target.method : 'GET')).toUpperCase()
     const viaTauri = tauriFetch()
     const useTauri = !!viaTauri && url.startsWith(BACKEND_URL!)
@@ -70,7 +79,9 @@ function install(): void {
       logFinish(id, res.ok ? 'ok' : 'error', `${res.status} ${res.statusText}`.trim())
       return res
     } catch (e) {
-      logFinish(id, 'error', describeError(e))
+      // A request the page aborted itself is not a connection failure.
+      const aborted = init?.signal?.aborted === true || (typeof target === 'object' && 'signal' in target && target.signal.aborted)
+      logFinish(id, isCancellation(e, aborted) ? 'cancelled' : 'error', describeError(e))
       throw e
     }
   }

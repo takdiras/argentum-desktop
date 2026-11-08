@@ -8,7 +8,8 @@
  */
 
 export type NetKind = 'http' | 'ws'
-export type NetStatus = 'pending' | 'ok' | 'error'
+/** `cancelled`: the page gave up on it (or it was skipped) — not a connection failure. */
+export type NetStatus = 'pending' | 'ok' | 'error' | 'cancelled'
 
 export interface NetEntry {
   id: number

@@ -165,6 +165,15 @@ with a failure count.
 
 The same events are printed to the terminal as `[net] …` lines under `bun run dev`.
 
+Two kinds of event are shown as grey **cancelled**, not as failures, so the failure count means connection
+problems:
+
+- requests the page aborted itself (a poll superseded, a component unmounting);
+- `/api/dev/*` calls. Those endpoints exist only on development servers; the web client's dev-only panels
+  (AI insight and the like) poll them whenever the app runs as a dev build, and a production server answers
+  every poll with a 404. Against a remote backend the app answers that 404 locally instead of sending the
+  requests. A backend on `localhost` still receives them.
+
 Why it exists: the upstream client swallows several request errors (for example `fetch('/api/cards')
 .catch(() => {})`), so a failed or slow load looks like missing data instead of an error. The deck view,
 for one, labels every card "not implemented" until the card catalog has arrived.
