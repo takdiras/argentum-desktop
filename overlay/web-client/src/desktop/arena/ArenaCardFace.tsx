@@ -10,9 +10,7 @@ import { useState, type CSSProperties } from 'react'
 import type { ClientCard } from '@/types'
 import { getCdnArtCropUrl, getScryfallArtCropUrl } from '@/utils/cardImages'
 import { getTokenFrameGradient, getTokenFrameTextColor, useResponsiveContext } from '@/components/game/board/shared'
-
-/** Fraction of the tile the name bar takes. */
-const NAME_BAR_SHARE = 0.24
+import { ARENA_NAME_BAR_SHARE } from './arenaMetrics'
 
 /** Art sources to try in order: Scryfall's CDN crop, then the by-name API, then no image. */
 function artSources(card: ClientCard): string[] {
@@ -74,7 +72,7 @@ export function ArenaCardFace({
     <div style={{ ...fill, display: 'flex', flexDirection: 'column', ...tappedWash }}>
       <div
         style={{
-          flex: `0 0 ${NAME_BAR_SHARE * 100}%`,
+          flex: `0 0 ${ARENA_NAME_BAR_SHARE * 100}%`,
           display: 'flex',
           alignItems: 'center',
           padding: '0 6px',

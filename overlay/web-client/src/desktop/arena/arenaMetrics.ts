@@ -14,7 +14,15 @@
 export const ARENA_CARD_RATIO = 0.9
 
 /** Widest card, whatever room the board has. */
-export const ARENA_MAX_CARD_WIDTH = 132
+export const ARENA_MAX_CARD_WIDTH = 168
+
+/**
+ * The widest tile for a window this tall. Upstream's base battlefield card is sized for a full 1.4:1
+ * card, so capping the compact tile at it left room unused; this scales with the window instead and
+ * leaves the solver (which fits the real slot) to decide how big the board can actually go.
+ */
+export const arenaMaxCardWidth = (viewportHeight: number): number =>
+  Math.max(96, Math.min(ARENA_MAX_CARD_WIDTH, Math.round(viewportHeight * 0.16)))
 
 /** Narrowest card before the board is just clipped. */
 export const ARENA_MIN_CARD_WIDTH = 40
@@ -36,6 +44,16 @@ export const ARENA_LAND_SHARE = 0.58
 export const ARENA_OTHER_SHARE = 0.38
 
 export const arenaCardHeight = (width: number): number => Math.round(width * ARENA_CARD_RATIO)
+
+/** Fraction of the tile's height the name bar takes. Icons that sit on the art start below it. */
+export const ARENA_NAME_BAR_SHARE = 0.24
+
+/**
+ * How far the power/toughness badge hangs below the tile: half its height, as it is centred on the
+ * bottom edge. Every row of tiles reserves this much, so the badge never lands on the row beneath
+ * or gets clipped at the edge of the slot.
+ */
+export const ARENA_BADGE_OVERHANG = 11
 
 /**
  * A real card's corner radius is 3 mm on a card 63 mm wide. The tile keeps that proportion, so its
@@ -104,13 +122,20 @@ export function linesFor(zone: ZoneCount, width: number, avail: number, gap: num
  * which line a tapped tile lands on, so a zone with any tapped stack reserves the tilted height.
  */
 const blockHeight = (lines: number, width: number, hasTapped: boolean, gap: number): number =>
-  lines > 0 ? lines * (hasTapped ? arenaTiltedHeight(width) : arenaCardHeight(width)) + (lines - 1) * gap : 0
+  lines > 0
+    ? lines * (hasTapped ? arenaTiltedHeight(width) : arenaCardHeight(width)) +
+      (lines - 1) * (gap + ARENA_BADGE_OVERHANG) +
+      ARENA_BADGE_OVERHANG
+    : 0
 
 export function solveArenaLayout(
   slotWidth: number,
   slotHeight: number,
   counts: ArenaCounts,
-  opts: { gap: number; maxWidth?: number },
+  opts: {
+    gap: number
+    maxWidth?: number
+  },
 ): ArenaLayout {
   const { gap } = opts
   const maxWidth = Math.max(ARENA_MIN_CARD_WIDTH, Math.min(opts.maxWidth ?? ARENA_MAX_CARD_WIDTH, ARENA_MAX_CARD_WIDTH))

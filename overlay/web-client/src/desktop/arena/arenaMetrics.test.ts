@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ARENA_BADGE_OVERHANG,
   ARENA_CARD_RATIO,
   ARENA_MAX_CARD_WIDTH,
   ARENA_MIN_CARD_WIDTH,
@@ -99,8 +100,9 @@ describe('solveArenaLayout', () => {
   it('fits the slot height whenever the floor allows it', () => {
     for (const [f, l, o] of [[6, 7, 2], [12, 9, 5], [3, 12, 0], [0, 6, 4]] as const) {
       const layout = solveArenaLayout(900, 260, counts(f, l, o), { gap: GAP })
-      const front = layout.frontLines > 0 ? layout.frontLines * arenaCardHeight(layout.cardWidth) + (layout.frontLines - 1) * GAP : 0
-      const back = layout.backLines > 0 ? layout.backLines * arenaCardHeight(layout.backWidth) + (layout.backLines - 1) * GAP : 0
+      const block = (lines: number, h: number) => (lines > 0 ? lines * h + (lines - 1) * (GAP + ARENA_BADGE_OVERHANG) + ARENA_BADGE_OVERHANG : 0)
+      const front = block(layout.frontLines, arenaCardHeight(layout.cardWidth))
+      const back = block(layout.backLines, arenaCardHeight(layout.backWidth))
       // (nothing is tapped in these boards, so upright heights apply)
       const total = front + back + (front > 0 && back > 0 ? 10 : 0)
       if (layout.cardWidth > ARENA_MIN_CARD_WIDTH) expect(total).toBeLessThanOrEqual(260)

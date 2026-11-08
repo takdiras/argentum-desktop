@@ -13,7 +13,7 @@ import type { ReactNode } from 'react'
 import type { GroupedCard } from '@/store/selectors.ts'
 import type { ResponsiveSizes } from '@/hooks/useResponsive'
 import { ResponsiveContext } from '@/components/game/board/shared'
-import { ARENA_LAND_SHARE, ARENA_OTHER_SHARE, ARENA_ZONE_GAP } from './arenaMetrics'
+import { ARENA_BADGE_OVERHANG, ARENA_LAND_SHARE, ARENA_OTHER_SHARE, ARENA_ZONE_GAP } from './arenaMetrics'
 
 export function ArenaZones({
   isOpponent,
@@ -39,7 +39,8 @@ export function ArenaZones({
   const hasOther = other.length > 0
   const gap = sizes.cardGap
 
-  const wrap = { display: 'flex', flexWrap: 'wrap', gap, minWidth: 0 } as const
+  // Rows are spaced further apart by the badge overhang: each tile's P/T badge hangs below it.
+  const wrap = { display: 'flex', flexWrap: 'wrap', columnGap: gap, rowGap: gap + ARENA_BADGE_OVERHANG, minWidth: 0 } as const
 
   return (
     <div
@@ -55,6 +56,10 @@ export function ArenaZones({
         gap: hasFront && (hasLands || hasOther) ? ARENA_ZONE_GAP : 0,
         padding: '0 6px',
         boxSizing: 'border-box',
+        // Above the opponent's hand, which the arena layout tucks behind the tiles, yet below every
+        // floating panel (the stack, the HUD), which all sit higher.
+        position: 'relative',
+        zIndex: 2,
       }}
     >
       {/* Creatures take whatever height the band leaves and centre in it. */}
@@ -65,6 +70,7 @@ export function ArenaZones({
           alignContent: 'center',
           alignItems: 'center',
           justifyContent: 'center',
+          paddingBottom: ARENA_BADGE_OVERHANG,
           // An empty block still has to give its height to the band and not collapse the layout.
           minHeight: hasFront ? undefined : 0,
         }}
@@ -75,7 +81,7 @@ export function ArenaZones({
 
       {(hasLands || hasOther) && (
         <ResponsiveContext.Provider value={backSizes}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flex: '0 0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flex: '0 0 auto', paddingBottom: ARENA_BADGE_OVERHANG }}>
             <div
               style={{
                 ...wrap,
