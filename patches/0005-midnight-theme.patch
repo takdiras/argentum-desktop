@@ -1,0 +1,22 @@
+diff --git a/web-client/vite.config.ts b/web-client/vite.config.ts
+index 16177aa..f427fcd 100644
+--- a/web-client/vite.config.ts
++++ b/web-client/vite.config.ts
+@@ -4,6 +4,7 @@ import { execSync } from 'child_process'
+ import { readFileSync } from 'fs'
+ import { createRequire } from 'module'
+ import path from 'path'
++import { midnightTheme } from './desktop-midnight-theme.mjs'
+ 
+ let commitHash = process.env.VITE_COMMIT_HASH?.slice(0, 7) || 'unknown'
+ try {
+@@ -64,7 +65,8 @@ const countryCentroids: Plugin = {
+ }
+ 
+ export default defineConfig({
+-  plugins: [react(), contributeGuideInDev, countryCentroids],
++  // midnightTheme: desktop build only — retints upstream's hard-coded purples to near-black navy.
++  plugins: [react(), contributeGuideInDev, countryCentroids, midnightTheme()],
+   resolve: {
+     alias: {
+       '@': path.resolve(__dirname, 'src'),
