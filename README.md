@@ -141,6 +141,10 @@ choice is stored in `localStorage` only; it is never sent to the server.
 - **The seat rail is a row.** In a pod the list of seats (life, hand count, the Overview and Follow
   toggles) runs along the top of the window instead of down the left edge, which gives the board that column
   back. Team games keep their grouped column, and phones keep the compact one.
+- **You sit bottom centre at six players.** In a free-for-all with six (or seven) players the table shows
+  three boards on the bottom row, and yours is the middle one: the next seat in turn order on your left,
+  the previous seat on your right, the rest across the top. With fewer players (or eight) the bottom row has
+  no centre, so you keep the bottom-right corner as upstream does.
 - **Waiting on the opponent.** While the game is waiting on a player (they hold priority and you have nothing
   to answer, or the server reports them deciding), a small spinner appears beside their name after a short
   delay, so an instant pass doesn't flash it. It never shows for you, once the game is over, or when

@@ -1,0 +1,25 @@
+diff --git a/web-client/src/components/game/GameBoard.tsx b/web-client/src/components/game/GameBoard.tsx
+--- a/web-client/src/components/game/GameBoard.tsx
++++ b/web-client/src/components/game/GameBoard.tsx
+@@ -41,6 +41,7 @@
+ import { ARENA_OPPONENT_ROW_WEIGHT, ARENA_PLAYER_ROW_WEIGHT } from '@/desktop/arena/arenaMetrics'
+ import { arenaHandTuck, arenaOpponentHandReservation } from '@/desktop/arena/arenaHand'
+ import { railIsHorizontal, railViewportIsCompact } from '@/desktop/arena/arenaRail'
++import { freeForAllRows } from '@/desktop/arena/arenaSeating'
+ import { CardPreview } from './card'
+ import { EmotePicker } from '../tableTalk/EmotePicker'
+ import { ChatButton } from '@/components/messages/ChatButton'
+@@ -217,11 +218,8 @@
+     // interactive board when playing) is never more crowded. Both rows are returned left-to-right.
+     const anchorIndex = Math.max(0, living.findIndex((p) => p.playerId === anchorId))
+     const clockwise = living.map((_, i) => living[(anchorIndex + i) % living.length]!.playerId)
+-    const bottomCount = Math.max(1, Math.floor(living.length / 2))
+-    return {
+-      bottom: clockwise.slice(0, bottomCount).reverse(),
+-      top: clockwise.slice(bottomCount),
+-    }
++    // Desktop: with 6+ players the anchor takes the bottom centre instead of the corner.
++    return freeForAllRows(clockwise)
+   }, [twoRowActive, gameState, isTeamGame, viewerTeam, teamMap, anchorId])
+   const bottomRowIds = twoRow.bottom
+   const topRowIds = twoRow.top
