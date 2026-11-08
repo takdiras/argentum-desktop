@@ -1,0 +1,210 @@
+diff --git a/web-client/src/components/game/GameBoard.tsx b/web-client/src/components/game/GameBoard.tsx
+index a899c5a..bcbd28c 100644
+--- a/web-client/src/components/game/GameBoard.tsx
++++ b/web-client/src/components/game/GameBoard.tsx
+@@ -36,6 +36,8 @@ import { RenderProfiler } from '@/utils/renderProfiler'
+ import { PooledBattlefieldLayoutContext } from './board/shared'
+ import { useBoardGroups } from './board/useBoardGroups'
+ import { usePooledBattlefieldLayout } from './board/usePooledBattlefieldLayout'
++import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
++import { ARENA_OPPONENT_ROW_WEIGHT, ARENA_PLAYER_ROW_WEIGHT } from '@/desktop/arena/arenaMetrics'
+ import { CardPreview } from './card'
+ import { EmotePicker } from '../tableTalk/EmotePicker'
+ import { ChatButton } from '@/components/messages/ChatButton'
+@@ -297,8 +299,11 @@ export function GameBoard({ spectatorMode = false, topOffset = 0 }: GameBoardPro
+   })
+   // fr weights: the browser hands the rows' actual remainder out in this ratio, so
+   // a measurement a few px off can't overflow the way fixed px tracks would.
+-  const opponentRowWeight = pooledLayout ? Math.max(1, Math.round(pooledLayout.opponentHeight)) : 1
+-  const playerRowWeight = pooledLayout ? Math.max(1, Math.round(pooledLayout.playerHeight)) : 1
++  // Arena layout: a fixed split that favours your own battlefield; the opponent's board is
++  // packed into the smaller upper share instead of the two being sized to match.
++  const arenaLayout = useArenaLayout()
++  const opponentRowWeight = arenaLayout ? ARENA_OPPONENT_ROW_WEIGHT : pooledLayout ? Math.max(1, Math.round(pooledLayout.opponentHeight)) : 1
++  const playerRowWeight = arenaLayout ? ARENA_PLAYER_ROW_WEIGHT : pooledLayout ? Math.max(1, Math.round(pooledLayout.playerHeight)) : 1
+ 
+   // Confirm mana selection: if pipeline is active, advance it; otherwise build
+   // modified LegalActionInfo with Explicit payment and route through executeAction
+diff --git a/web-client/src/components/game/board/Battlefield.tsx b/web-client/src/components/game/board/Battlefield.tsx
+index f390978..9fccbc6 100644
+--- a/web-client/src/components/game/board/Battlefield.tsx
++++ b/web-client/src/components/game/board/Battlefield.tsx
+@@ -15,6 +15,9 @@ import { GroupedCard } from '@/store/selectors.ts'
+ import type { ClientCard, EntityId } from '@/types'
+ import { getCardImageUrl } from '@/utils/cardImages.ts'
+ import { RenderProfiler } from '@/utils/renderProfiler'
++import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
++import { useArenaSlotLayout } from '@/desktop/arena/useArenaSlotLayout'
++import { ArenaZones } from '@/desktop/arena/ArenaZones'
+ import {
+   TARGET_COLOR,
+   TARGET_GLOW,
+@@ -73,7 +76,17 @@ export function Battlefield({ isOpponent, playerId, spectatorMode = false }: {
+   // layout and size themselves from their own slot.
+   const pooledLayout = useContext(PooledBattlefieldLayoutContext)
+   const pooled = pooledLayout ? (isOpponent ? pooledLayout.opponent : pooledLayout.player) : null
+-  const { sizes, backSizes, frontRowLines, backRowLines, compact } = useSlotSizedResponsive(slotRef, stats, pooled)
++  const classicLayout = useSlotSizedResponsive(slotRef, stats, pooled)
++  // Arena layout (desktop setting): its own card sizes, solved for the compact tiles.
++  const arena = useArenaLayout()
++  const arenaSlot = useArenaSlotLayout(
++    slotRef,
++    { lands: groupedLands, other: groupedOther, creatures: groupedCreatures, planeswalkers: groupedPlaneswalkers },
++    stats,
++  )
++  const { sizes, backSizes, frontRowLines, backRowLines, compact } = arena
++    ? { ...classicLayout, sizes: arenaSlot.sizes, backSizes: arenaSlot.backSizes }
++    : classicLayout
+   return (
+     <div
+       ref={slotRef}
+@@ -104,6 +117,7 @@ export function Battlefield({ isOpponent, playerId, spectatorMode = false }: {
+           backRowLines={backRowLines}
+           backSizes={backSizes}
+           compact={compact}
++          arena={arena}
+         />
+       </ResponsiveContext.Provider>
+     </div>
+@@ -121,9 +135,12 @@ function BattlefieldContent({
+   backRowLines,
+   backSizes,
+   compact,
++  arena = false,
+ }: {
+   isOpponent: boolean
+   spectatorMode?: boolean
++  /** Draw the arena zones instead of upstream's two rows. */
++  arena?: boolean
+   groupedLands: readonly GroupedCard[]
+   groupedCreatures: readonly GroupedCard[]
+   groupedPlaneswalkers: readonly GroupedCard[]
+@@ -526,8 +543,20 @@ function BattlefieldContent({
+         gap: 0,
+       }}
+     >
++      {arena && (
++        <ArenaZones
++          isOpponent={isOpponent}
++          creatures={groupedCreatures}
++          planeswalkers={groupedPlaneswalkers}
++          lands={groupedLands}
++          other={groupedOther}
++          renderGroup={renderWithAttachments}
++          sizes={responsive}
++          backSizes={backSizes}
++        />
++      )}
+       {/* For player: front row (top, toward center), then back row (bottom, near hand) */}
+-      {!isOpponent && (
++      {!arena && !isOpponent && (
+         <>
+           {frontRow}
+           {renderDivider()}
+@@ -536,7 +565,7 @@ function BattlefieldContent({
+       )}
+ 
+       {/* For opponent: back row (top, near hand), then front row (bottom, toward center) */}
+-      {isOpponent && (
++      {!arena && isOpponent && (
+         <>
+           {backRow}
+           {renderDivider()}
+diff --git a/web-client/src/components/game/card/GameCard.tsx b/web-client/src/components/game/card/GameCard.tsx
+index f3632a4..1fcc332 100644
+--- a/web-client/src/components/game/card/GameCard.tsx
++++ b/web-client/src/components/game/card/GameCard.tsx
+@@ -6,6 +6,9 @@ import type { ClientCard, EntityId, LegalActionInfo } from '@/types'
+ import { Color, ColorSymbols, CounterType } from '@/types/enums'
+ import { isBattle } from '@/utils/combatTargets'
+ import { getCardImageUrl, getScryfallFallbackUrl, faceDownImageUrl } from '@/utils/cardImages.ts'
++import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
++import { ArenaCardFace } from '@/desktop/arena/ArenaCardFace'
++import { ARENA_CARD_RATIO, ARENA_TAP_TILT_DEG, arenaTiltedHeight, arenaTiltedWidth } from '@/desktop/arena/arenaMetrics'
+ import { useInteraction } from '@/hooks/useInteraction.ts'
+ import { useOpenCardMenuOnTap } from '@/hooks/useOpenCardMenuOnTap.ts'
+ import { isGhostMouseEvent, noteTouchInteraction } from '@/utils/ghostMouse.ts'
+@@ -277,6 +280,8 @@ function GameCardImpl({
+   const isDraggingThisCard = useGameStore((state) => state.draggingCardId === card.id)
+   const isBeheldPulsing = useGameStore((state) => state.beholdPulses.some((p) => p.cardId === card.id))
+   const responsive = useResponsiveContext()
++  // Arena board layout: permanents draw as a name bar over their art instead of a full card face.
++  const compactFace = useArenaLayout() && battlefield
+   const openCardMenuOnTap = useOpenCardMenuOnTap()
+   const { handleCardClick, handleDoubleClick, executeAction } = useInteraction()
+   const dragStartPos = useRef<{ x: number; y: number } | null>(null)
+@@ -378,8 +383,9 @@ function GameCardImpl({
+   // the standard "tap = +90° from current" semantic. One flag decides it for every such family
+   // (server-side `CardDefinition.isLandscapePrint`), and it's per *face*, so a Siege recast as its
+   // portrait back face stops being rotated.
+-  const isLandscapePrint = !faceDown && !!battlefield && card.isLandscapeFace === true
+-  const totalRotateDeg = (isLandscapePrint ? 90 : 0) + (isTapped ? 90 : 0)
++  const isLandscapePrint = !compactFace && !faceDown && !!battlefield && card.isLandscapeFace === true
++  // Arena layout: tapped permanents tilt slightly (the face greys out and shows a tap icon) rather than lie down.
++  const totalRotateDeg = (isLandscapePrint ? 90 : 0) + (isTapped ? (compactFace ? ARENA_TAP_TILT_DEG : 90) : 0)
+   // Applied wherever a chip counter-rotates by `-totalRotateDeg`: it has to ease alongside the
+   // card's own turn instead of snapping to its final angle the instant the permanent taps.
+   const counterRotateTransition = battlefield && !prefersReducedMotion() ? CARD_COUNTER_ROTATE_TRANSITION : undefined
+@@ -486,7 +492,7 @@ function GameCardImpl({
+       ? responsive.battlefieldCardWidth
+       : responsive.cardWidth
+   const width = overrideWidth ?? baseWidth
+-  const cardRatio = 1.4
++  const cardRatio = compactFace ? ARENA_CARD_RATIO : 1.4
+   const height = Math.round(width * cardRatio)
+ 
+   // Check if this card can be played/cast (for drag-to-play).
+@@ -1198,8 +1204,10 @@ function GameCardImpl({
+ 
+   // Container dimensions - expand width when the card sits sideways (tapped permanents
+   // and Rooms always-landscape) to prevent overlap with neighbours.
+-  const containerWidth = needsLandscapeContainer && battlefield ? height + 8 : width
+-  const containerHeight = height
++  // A tilted arena tile needs the bounding box of its rotated rectangle, in both directions.
++  const tiltedBox = compactFace && isTapped
++  const containerWidth = needsLandscapeContainer && battlefield ? height + 8 : tiltedBox ? arenaTiltedWidth(width) : width
++  const containerHeight = tiltedBox ? arenaTiltedHeight(width) : height
+ 
+   // A sideways card rotates about its center, so its visible band is only `width` tall and
+   // sits (height - width) / 2 inside the box top *and* bottom. Left there it floats: a tapped
+@@ -1280,7 +1288,9 @@ function GameCardImpl({
+       }}
+     >
+       {/* Legacy art-only token images need a generated frame; full token-card images render directly. */}
+-      {!faceDown && card.isToken && card.imageUri?.includes('/art_crop/') ? (
++      {compactFace ? (
++        <ArenaCardFace card={card} faceDown={faceDown} faceDownSrc={cardImageUrl} imageStyle={imageRotationStyle} tapped={isTapped} />
++      ) : !faceDown && card.isToken && card.imageUri?.includes('/art_crop/') ? (
+         <div style={{
+           ...styles.tokenFrame,
+           background: getTokenFrameGradient(card.colors),
+@@ -3022,7 +3032,7 @@ function GameCardImpl({
+         width: containerWidth,
+         height: containerHeight,
+         display: 'flex',
+-        alignItems: 'flex-end',
++        alignItems: tiltedBox ? 'center' : 'flex-end',
+         justifyContent: 'center',
+         ...(prefersReducedMotion() ? {} : { transition: 'width 0.18s ease, height 0.18s ease' }),
+         pointerEvents: 'none',
+diff --git a/web-client/src/components/preferences/PreferencesPanel.tsx b/web-client/src/components/preferences/PreferencesPanel.tsx
+index 1b7ea4e..e0912c8 100644
+--- a/web-client/src/components/preferences/PreferencesPanel.tsx
++++ b/web-client/src/components/preferences/PreferencesPanel.tsx
+@@ -19,6 +19,7 @@ import { useAuthStore } from '@/store/authStore'
+ import { Step, StepDisplayNames } from '@/types/enums'
+ import type { OwnStackStop, PriorityModeValue } from '@/types/messages'
+ import s from './Preferences.module.css'
++import { BoardLayoutSetting } from '@/desktop/arena/BoardLayoutSetting'
+ 
+ const MODE_OPTIONS: { value: PriorityModeValue; label: string; hint: string }[] = [
+   { value: 'auto', label: 'Auto', hint: 'Passes whenever you have nothing meaningful to do, and stops when you can respond.' },
+@@ -290,6 +291,8 @@ export function PreferencesPanel({ compact = false }: { compact?: boolean }) {
+         </Field>
+       </section>
+ 
++      <BoardLayoutSetting />
++
+       <section className={s.section}>
+         <header className={s.sectionHead}>
+           <h2 className={s.sectionTitle}>Display</h2>
