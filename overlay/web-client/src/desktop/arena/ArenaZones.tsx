@@ -13,6 +13,7 @@ import type { ReactNode } from 'react'
 import type { GroupedCard } from '@/store/selectors.ts'
 import type { ResponsiveSizes } from '@/hooks/useResponsive'
 import { ResponsiveContext } from '@/components/game/board/shared'
+import { Playmat } from './Playmat'
 import {
   ARENA_BADGE_OVERHANG,
   ARENA_LAND_SHARE,
@@ -24,6 +25,7 @@ import {
 
 export function ArenaZones({
   isOpponent,
+  playerId,
   creatures,
   planeswalkers,
   lands,
@@ -33,6 +35,8 @@ export function ArenaZones({
   backSizes,
 }: {
   isOpponent: boolean
+  /** Whose board this is when it isn't simply "you" / "the opponent" (a multiplayer cell). */
+  playerId?: string | undefined
   creatures: readonly GroupedCard[]
   planeswalkers: readonly GroupedCard[]
   lands: readonly GroupedCard[]
@@ -69,6 +73,7 @@ export function ArenaZones({
         zIndex: 2,
       }}
     >
+      <Playmat isOpponent={isOpponent} playerId={playerId} />
       {/* Creatures take whatever height the band leaves and centre in it. */}
       <div
         style={{

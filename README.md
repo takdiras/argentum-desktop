@@ -37,6 +37,7 @@ files into upstream. That keeps upstream's code recognisable and the patches eas
 | `patches/0016-arena-stack-scroll.patch` | The stack panel stays scrolled to the top of the stack, and older cards pin to its top edge as thin strips. |
 | `patches/0021-stack-side.patch` | Pins the stack panel to the left or right window edge (Preferences → Stack position) and opens its yield menu on the inward side. |
 | `patches/0024-incoming-combat-damage.patch` | Mounts the incoming-damage badges next to the combat arrows. |
+| `patches/0025-arena-playmat.patch` | Tells the arena zones whose board they are, so each can draw its playmat. |
 | `overlay/web-client/src/desktop/` | New files: `backend.ts`, `installDesktopFetch.ts` and the connection status (above), and `PasteSignInLink.tsx` + `signInLink.ts` (sign-in, below). |
 | `overlay/web-client/src/desktop/arena/` | The arena layout: zones, compact card face, sizing solver, stack metrics, settings control. |
 | `overlay/web-client/desktop-midnight-theme.mjs` | The Vite plugin that retints upstream's purples to near-black navy. |
@@ -173,6 +174,13 @@ choice is stored in `localStorage` only; it is never sent to the server.
 - **Ungroup toggles aren't clipped.** The small arrows on a stack of identical cards hang just outside it, so
   the zones keep 8 px of headroom above and beside their tiles; a row at the edge of a board no longer cuts
   them off.
+- **A playmat behind every battlefield.** Each player's board has a faint backdrop (20 % opacity, fading out
+  toward the edges, never takes a click): their **commander's art** in Commander (two partners share the mat
+  half and half); with no commander, the art of the **deck's marquee card**, the highest-mana-value non-land
+  card of theirs the client has seen, which then stays put for the game; and before anyone has shown a spell
+  (an opponent who has only played lands), a **colour wash** of the basic land types they have shown, or a
+  neutral slate. Art is Scryfall's art crop, from the card's own image URL where it has one. Arena layout only.
+  `desktop/arena/Playmat.tsx` and the tested rules in `playmatArt.ts`; patch 0025 passes the seat to the zones.
 - **Tile size depends on the seat.** Each seat's tiles are the widest that fit that seat's own slot for what it
   has out, capped by the window height. A seat with few permanents therefore draws bigger tiles than a crowded
   one, and the sizes differ between seats in a pod.
