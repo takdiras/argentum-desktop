@@ -3,9 +3,13 @@ import {
   RAIL_ROW_CSS,
   RAIL_ROW_INSET_LEFT,
   RAIL_ROW_INSET_RIGHT,
+  cameraControlsInCorner,
+  handLimitSuffix,
+  plateDodge,
   railChipsCondensed,
   railInitials,
   railIsHorizontal,
+  railRowHidden,
   railViewportIsCompact,
 } from './arenaRail'
 
@@ -93,5 +97,59 @@ describe('railInitials', () => {
     expect(railInitials('')).toBe('?')
     expect(railInitials('[AI]')).toBe('?')
     expect(railInitials('***')).toBe('?')
+  })
+})
+
+describe('cameraControlsInCorner', () => {
+  it('moves them out of the row for a player at a row-rail table', () => {
+    expect(cameraControlsInCorner({ rowRail: true, multiplayer: true, spectating: false })).toBe(true)
+  })
+  it('keeps them in the rail for a spectator, a column rail or a two-player game', () => {
+    expect(cameraControlsInCorner({ rowRail: true, multiplayer: true, spectating: true })).toBe(false)
+    expect(cameraControlsInCorner({ rowRail: false, multiplayer: true, spectating: false })).toBe(false)
+    expect(cameraControlsInCorner({ rowRail: true, multiplayer: false, spectating: false })).toBe(false)
+  })
+})
+
+describe('railRowHidden', () => {
+  const base = { inCorner: true, multiView: true, platesOnEverySeat: true, livingOpponentIds: ['a', 'b'], visibleIds: ['a', 'b', 'me'] }
+  it('hides the row when every living opponent board is on screen', () => {
+    expect(railRowHidden(base)).toBe(true)
+  })
+  it('keeps it when a board is missing (collapsed cell, focused camera)', () => {
+    expect(railRowHidden({ ...base, visibleIds: ['a', 'me'] })).toBe(false)
+  })
+  it('keeps it outside the all-boards view or when the controls are not in the corner', () => {
+    expect(railRowHidden({ ...base, multiView: false })).toBe(false)
+    expect(railRowHidden({ ...base, inCorner: false })).toBe(false)
+  })
+  it('keeps it while a seat has no plate (the center orb stands in for it)', () => {
+    expect(railRowHidden({ ...base, platesOnEverySeat: false })).toBe(false)
+  })
+})
+
+describe('handLimitSuffix', () => {
+  it('is empty at the default limit', () => {
+    expect(handLimitSuffix(7)).toBe('')
+    expect(handLimitSuffix(undefined)).toBe('')
+  })
+  it('shows no maximum as infinity and a finite cap as a number', () => {
+    expect(handLimitSuffix(null)).toBe('/∞')
+    expect(handLimitSuffix(4)).toBe('/4')
+  })
+})
+
+describe('plateDodge', () => {
+  const concede = { left: 1700, right: 1988, top: 12, bottom: 47 }
+  it('is zero when the plate is clear of every zone', () => {
+    expect(plateDodge({ left: 1000, right: 1200, top: 16, bottom: 40 }, [concede])).toBe(0)
+    expect(plateDodge({ left: 1750, right: 1900, top: 60, bottom: 84 }, [concede])).toBe(0)
+  })
+  it('moves a plate under a zone down to just below it', () => {
+    expect(plateDodge({ left: 1550, right: 1725, top: 16, bottom: 40 }, [concede])).toBe(47 + 6 - 16)
+  })
+  it('takes the largest need across zones', () => {
+    const left = { left: 0, right: 170, top: 0, bottom: 48 }
+    expect(plateDodge({ left: 100, right: 300, top: 10, bottom: 34 }, [concede, left])).toBe(48 + 6 - 10)
   })
 })

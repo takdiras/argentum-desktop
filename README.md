@@ -139,12 +139,23 @@ choice is stored in `localStorage` only; it is never sent to the server.
   behind its name plate (the lower half of the cards still shows, so you can count them), and the board
   starts higher. Top and bottom rows use the same fan, and your own cell reserves the same trimmed band so
   the bottom boards line up. **Your own hand is unchanged**: it is read and clicked, so nothing covers it.
-- **The seat rail is a row.** In a pod the list of seats (life, hand count, the Overview and Follow
-  toggles) runs along the top of the window instead of down the left edge, which gives the board that column
-  back. Team games keep their grouped column, and phones keep the compact one.
+- **The seat rail is a row.** In a pod the list of seats (life, hand count) runs along the top of the window
+  instead of down the left edge, which gives the board that column back. Team games keep their grouped column, and phones keep the compact one.
   When the row is too crowded to print names (six players on a laptop-sized window), each seat shows
   its initials, life and hand count, and **hovering a seat opens it to the full name** with a short slide.
   That keeps the row inside the space between the corner buttons, so it never runs under Concede.
+- **Name plates carry the seat info; the row goes away.** On the all-boards table (Overview on, a bottom row
+  of seats) every board already has a name plate, so the top row only repeated each name and life. The plate
+  now also shows what the row did: whose turn it is (a ring and ▶), hand size (with a changed maximum such as
+  `/∞`), speed, monarch / initiative / dungeon, player counters, commander damage, who is deciding, and the
+  1-9 key that focuses the board, and the row is not drawn. It comes back whenever a board is *not* on screen
+  (the focused camera, a collapsed cell, the combat defender split), since a chip is how you bring that
+  board in. **Overview and Follow** now sit to the left of Concede (top right) instead of ending the row;
+  spectators, who have no Concede, keep them in the rail. With the row gone the strip along the top rides up
+  (10 px instead of 48), and a plate that would sit under Concede, the camera switches or the Fullscreen buttons
+  steps down by just enough to clear them, so only those corner boards give a little of the gain back.
+  Patches 0022 and 0023; `desktop/arena/SeatPlateExtras.tsx`, `CameraControls.tsx`, and the tested rules in
+  `arenaRail.ts`.
 - **You sit bottom centre at six players.** In a free-for-all with six (or seven) players the table shows
   three boards on the bottom row, and yours is the middle one: the next seat in turn order on your left,
   the previous seat on your right, the rest across the top. With fewer players (or eight) the bottom row has
@@ -249,6 +260,10 @@ for one, labels every card "not implemented" until the card catalog has arrived.
 Tauri's HTTP plugin doesn't request compression unless its `gzip` / `brotli` / `deflate` features are enabled,
 so this project enables them in `src-tauri/Cargo.toml`. Without that, the catalog takes many times longer
 and decks show "not implemented" for the whole wait.
+
+## Deck loading indicator
+
+The deck screens (the Library, the Deckbuilder's "My decks" rail and saved-deck browser, and the deck picker in lobbies and games) show a spinner with a label such as "Loading your decks…" while the deck list is still loading, so an empty screen can be told apart from "no decks". Decks already on this computer appear straight away, with a slim "Loading your online decks…" row above them until the account's decks arrive. It is a no-op once loading finishes. Hooked in by patch 0020; the component is `desktop/loading/LoadingIndicator.tsx`.
 
 ## Signing in
 

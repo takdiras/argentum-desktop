@@ -1,0 +1,180 @@
+diff --git a/web-client/src/components/ui/DeckPicker.tsx b/web-client/src/components/ui/DeckPicker.tsx
+--- a/web-client/src/components/ui/DeckPicker.tsx
++++ b/web-client/src/components/ui/DeckPicker.tsx
+@@ -51,6 +51,7 @@
+ import type { CardSummary } from '../deckbuilder/cardFilter'
+ import { SetSelector, rollRandomSet } from './SetSelector'
+ import styles from './DeckPicker.module.css'
++import { LoadingIndicator } from '@/desktop/loading/LoadingIndicator'
+ 
+ export type DeckPickerTab = 'saved' | 'examples' | 'paste' | 'random'
+ type Tab = DeckPickerTab
+@@ -634,6 +635,7 @@
+             legalityMap={legalityMap}
+             format={format}
+             hiddenCount={decks.length - visibleDecks.length}
++            loading={!decksSettled}
+             selectedId={selectedSavedId}
+             disabled={disabled}
+             onSelect={setSelectedSavedId}
+@@ -789,13 +791,14 @@
+  * deck to play, and hover exposes Edit (opens it in the Paste tab) / Delete.
+  */
+ function SavedDecksPanel({
+-  decks, catalog, legalityMap, format, hiddenCount, selectedId, disabled, onSelect, onDelete, onEdit, onBrowse, onPaste,
++  decks, catalog, legalityMap, format, hiddenCount, loading, selectedId, disabled, onSelect, onDelete, onEdit, onBrowse, onPaste,
+ }: {
+   decks: UnifiedDeck[]
+   catalog: Record<string, CardSummary>
+   legalityMap: Record<string, string[]>
+   format: string | null
+   hiddenCount: number
++  loading: boolean
+   selectedId: string | null
+   disabled: boolean
+   onSelect: (id: string) => void
+@@ -811,6 +814,8 @@
+     [decks, catalog],
+   )
+ 
++  // Nothing to show yet: say so, rather than flashing the "No decks of your own" empty state.
++  if (decks.length === 0 && loading) return <LoadingIndicator label="Loading your decks…" />
+   if (decks.length === 0) {
+     if (format && hiddenCount > 0) {
+       return (
+@@ -833,6 +838,7 @@
+   }
+   return (
+     <>
++      {loading && <LoadingIndicator variant="inline" label="Loading your online decks…" />}
+       {format && hiddenCount > 0 && (
+         <p className={styles.helperText}>
+           Showing {decks.length} deck{decks.length === 1 ? '' : 's'} legal in {labelForFormat(format.toUpperCase())} ·
+@@ -919,11 +925,8 @@
+     [examples, catalog],
+   )
+   if (tiles.length === 0) {
+-    return (
+-      <p className={styles.helperText}>
+-        {loading ? 'Loading starter decks…' : 'No starter decks for this format.'}
+-      </p>
+-    )
++    if (loading) return <LoadingIndicator label="Loading starter decks…" />
++    return <p className={styles.helperText}>No starter decks for this format.</p>
+   }
+   return (
+     <div className={styles.deckGridScroll}>
+diff --git a/web-client/src/components/deckbuilder/DeckbuilderPage.tsx b/web-client/src/components/deckbuilder/DeckbuilderPage.tsx
+--- a/web-client/src/components/deckbuilder/DeckbuilderPage.tsx
++++ b/web-client/src/components/deckbuilder/DeckbuilderPage.tsx
+@@ -118,6 +118,7 @@
+   type DeckStats,
+ } from '@/components/ui/DeckSummary'
+ import styles from './deckbuilder.module.css'
++import { LoadingIndicator } from '@/desktop/loading/LoadingIndicator'
+ 
+ // ---------------------------------------------------------------------------
+ // Types & constants
+@@ -263,6 +264,7 @@
+   // the anonymous save path and the active-deck (local) operations.
+   const {
+     decks: browserDecks,
++    settled: decksSettled,
+     reload: reloadUnifiedDecks,
+     removeDeck: removeUnifiedDeck,
+     updateDetails: updateUnifiedDeckDetails,
+@@ -1537,6 +1539,7 @@
+       <aside className={styles.left}>
+         <SavedDecksSummary
+           decks={browserDecks}
++          loading={!decksSettled}
+           activeDeckId={activeDeckId}
+           onOpen={() => {
+             reloadUnifiedDecks()
+@@ -1781,6 +1784,7 @@
+       {decksBrowserOpen && (
+         <SavedDecksBrowser
+           decks={browserDecks}
++          loading={!decksSettled}
+           catalog={catalogIndex}
+           activeDeckId={activeDeckId}
+           onClose={() => setDecksBrowserOpen(false)}
+@@ -2571,10 +2575,12 @@
+ 
+ function SavedDecksSummary({
+   decks,
++  loading,
+   activeDeckId,
+   onOpen,
+ }: {
+   decks: SavedDeck[]
++  loading: boolean
+   activeDeckId: string | null
+   onOpen: () => void
+ }) {
+@@ -2606,7 +2612,9 @@
+           )}
+         </div>
+         {/* Nothing to browse is a note, not a disabled button. */}
+-        {decks.length === 0 ? (
++        {decks.length === 0 && loading ? (
++          <LoadingIndicator variant="inline" label="Loading your decks…" delayMs={0} />
++        ) : decks.length === 0 ? (
+           <span className={styles.savedNone}>No saved decks yet</span>
+         ) : (
+           <button className={styles.savedBrowseButton} onClick={onOpen} type="button" title="Browse saved decks">
+@@ -2646,6 +2654,7 @@
+ 
+ function SavedDecksBrowser({
+   decks,
++  loading,
+   catalog,
+   activeDeckId,
+   onClose,
+@@ -2654,6 +2663,7 @@
+   onDelete,
+ }: {
+   decks: UnifiedDeck[]
++  loading: boolean
+   catalog: Record<string, CardSummary>
+   activeDeckId: string | null
+   onClose: () => void
+@@ -2825,11 +2835,18 @@
+         </div>
+ 
+         <div className={styles.browserScroll}>
++          {loading && (
++            <LoadingIndicator
++              variant={decks.length === 0 ? 'block' : 'inline'}
++              label="Loading your decks…"
++              delayMs={0}
++            />
++          )}
+           <div className={styles.browserGrid}>
+             {filtered.length === 0 ? (
+               <div className={styles.savedEmpty}>
+                 {decks.length === 0
+-                  ? 'No saved decks yet. Build one and click Save.'
++                  ? loading ? '' : 'No saved decks yet. Build one and click Save.'
+                   : 'No decks match the current filters.'}
+               </div>
+             ) : (
+diff --git a/web-client/src/pages/LibraryPage.tsx b/web-client/src/pages/LibraryPage.tsx
+--- a/web-client/src/pages/LibraryPage.tsx
++++ b/web-client/src/pages/LibraryPage.tsx
+@@ -39,6 +39,7 @@
+ import { useSaveDeck } from '@/store/useSaveDeck'
+ import { labelForFormat, useDeckLegalFormats } from '@/utils/deckLegality'
+ import styles from '@/components/library/Library.module.css'
++import { LoadingIndicator } from '@/desktop/loading/LoadingIndicator'
+ 
+ export type LibraryTab = 'decks' | 'cubes'
+ export type LibraryView = 'grid' | 'list'
+@@ -409,6 +410,7 @@
+   const loading = !ready && entries.length === 0
+   return (
+     <>
++      {!ready && <LoadingIndicator variant={loading ? 'block' : 'inline'} label={`Loading ${noun}…`} />}
+       <ul className={view === 'grid' ? styles.grid : styles.list} aria-busy={loading || undefined}>
+         {!filtering && (
+           <li className={view === 'grid' ? styles.startItem : styles.startRowItem}>
