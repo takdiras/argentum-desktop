@@ -1,0 +1,35 @@
+diff --git a/web-client/src/components/game/board/Battlefield.tsx b/web-client/src/components/game/board/Battlefield.tsx
+--- a/web-client/src/components/game/board/Battlefield.tsx
++++ b/web-client/src/components/game/board/Battlefield.tsx
+@@ -111,6 +111,7 @@
+       <ResponsiveContext.Provider value={sizes}>
+         <BattlefieldContent
+           isOpponent={isOpponent}
++          playerId={playerId}
+           spectatorMode={spectatorMode}
+           groupedLands={groupedLands}
+           groupedCreatures={groupedCreatures}
+@@ -129,6 +130,7 @@
+ 
+ function BattlefieldContent({
+   isOpponent,
++  playerId,
+   spectatorMode = false,
+   groupedLands,
+   groupedCreatures,
+@@ -141,6 +143,7 @@
+   arena = false,
+ }: {
+   isOpponent: boolean
++  playerId?: EntityId | undefined
+   spectatorMode?: boolean
+   /** Draw the arena zones instead of upstream's two rows. */
+   arena?: boolean
+@@ -552,6 +555,7 @@
+       {arena && (
+         <ArenaZones
+           isOpponent={isOpponent}
++          playerId={playerId}
+           creatures={groupedCreatures}
+           planeswalkers={groupedPlaneswalkers}
+           lands={groupedLands}
