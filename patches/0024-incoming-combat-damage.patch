@@ -1,0 +1,20 @@
+diff --git a/web-client/src/components/combat/CombatArrows.tsx b/web-client/src/components/combat/CombatArrows.tsx
+--- a/web-client/src/components/combat/CombatArrows.tsx
++++ b/web-client/src/components/combat/CombatArrows.tsx
+@@ -17,6 +17,7 @@ import { bandsFromBandIds, computeCombatClique, type CombatClique } from './comb
+ import { BLOCKER_TONE, CliqueCaption, CliqueSpotlight, cliqueBounds, describeFocus, measureClique } from './CombatFocus'
+ import { setCombatFocusBounds } from './combatFocusBounds'
+ import { StackCutoutDefs, stackCutoutMask, useStackCutout } from '@/desktop/arena/StackCutoutLayer'
++import { IncomingDamageBadges } from '@/desktop/combat/IncomingDamageBadges'
+ 
+ interface Point {
+   x: number
+@@ -1111,6 +1112,8 @@ export function CombatArrows() {
+         )}
+         </g>
+       </svg>
++      {/* Desktop: the damage this attack is about to deal, beside each defender's name. */}
++      <IncomingDamageBadges />
+       {caption && focusId && focusRect && (
+         <CliqueCaption
+           key={focusId}

@@ -35,6 +35,7 @@ files into upstream. That keeps upstream's code recognisable and the patches eas
 | `patches/0014-stack-above-combat-arrows.patch` | Masks the combat arrow layer (and the BLOCKED tag) where the stack panel is, so the stack stays on top of it. |
 | `patches/0015-arena-overflow-visible.patch` | Arena only: stops the battlefield slot and the opponent's grid cell from clipping tilted tapped tiles and ungroup toggles at their edge. |
 | `patches/0016-arena-stack-scroll.patch` | The stack panel stays scrolled to the top of the stack, and older cards pin to its top edge as thin strips. |
+| `patches/0024-incoming-combat-damage.patch` | Mounts the incoming-damage badges next to the combat arrows. |
 | `overlay/web-client/src/desktop/` | New files: `backend.ts`, `installDesktopFetch.ts` and the connection status (above), and `PasteSignInLink.tsx` + `signInLink.ts` (sign-in, below). |
 | `overlay/web-client/src/desktop/arena/` | The arena layout: zones, compact card face, sizing solver, stack metrics, settings control. |
 | `overlay/web-client/desktop-midnight-theme.mjs` | The Vite plugin that retints upstream's purples to near-black navy. |
@@ -178,6 +179,20 @@ choice is stored in `localStorage` only; it is never sent to the server.
 
 Arena applies to the two-player board and to multiplayer seats; the stack changes apply whenever Arena is on.
 Classic leaves every one of them as upstream draws it.
+
+## Incoming combat damage
+
+While attackers are declared, a small red negative number (for example `-5`) shows beside each defender about to take
+damage: a player's name plate or life orb, or the top-right corner of a planeswalker or battle card. It is the sum
+of the attackers' power as the server sends it, so pump effects are included. It drops as blocks are declared: an
+attacker that gets blocked stops counting, and a defender whose attackers are all blocked loses its number.
+It updates live for the defender while they assign blocks, for the attacker watching them, and in spectated games.
+It is shown only during the declare attackers and declare blockers steps, so it is gone once combat damage is dealt.
+
+The client does no combat rules: a blocked attacker with trample counts for nothing until the server has assigned its
+damage, and until then the number carries a plus (`-2+`, "at least"). Once the server has assigned it, the assigned
+amount is used. First strike, double strike and damage-prevention effects are not modelled. Always on, no setting
+(patch 0024; `desktop/combat/incomingDamage.ts` is unit-tested, `IncomingDamageBadges.tsx` draws it).
 
 ## Keyboard
 
