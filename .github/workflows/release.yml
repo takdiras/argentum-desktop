@@ -20,7 +20,7 @@ jobs:
     name: Tests and typecheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Tag matches app version
         if: startsWith(github.ref, 'refs/tags/v')
@@ -74,7 +74,7 @@ jobs:
             rust-targets: ''
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
 
@@ -104,7 +104,7 @@ jobs:
 
       # Tag builds also produce the signed update bundles and latest.json that installed apps check
       # (see src-tauri/tauri.updater.conf.json). PRs and manual runs skip that, so they need no secret.
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
