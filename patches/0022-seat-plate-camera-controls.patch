@@ -1,0 +1,133 @@
+diff --git a/web-client/src/components/game/GameBoard.tsx b/web-client/src/components/game/GameBoard.tsx
+--- a/web-client/src/components/game/GameBoard.tsx
++++ b/web-client/src/components/game/GameBoard.tsx
+@@ -40,7 +40,7 @@
+ import { useArenaLayout } from '@/desktop/arena/arenaLayoutStore'
+ import { ARENA_OPPONENT_ROW_WEIGHT, ARENA_PLAYER_ROW_WEIGHT } from '@/desktop/arena/arenaMetrics'
+ import { arenaHandTuck, arenaOpponentHandReservation } from '@/desktop/arena/arenaHand'
+-import { railIsHorizontal, railViewportIsCompact } from '@/desktop/arena/arenaRail'
++import { cameraControlsInCorner, railIsHorizontal, railRowHidden, railViewportIsCompact } from '@/desktop/arena/arenaRail'
+ import { freeForAllRows } from '@/desktop/arena/arenaSeating'
+ import { CardPreview } from './card'
+ import { EmotePicker } from '../tableTalk/EmotePicker'
+@@ -610,6 +610,16 @@
+     bottomCollapsedIds,
+     centerOrbOpponentId,
+   ])
++  // Row-rail table: Overview / Follow sit beside Concede, and the seat row goes away while every board
++  // is on screen with its own plate (the plates carry the seat info; see desktop/arena/SeatPlateExtras).
++  const cameraInCorner = cameraControlsInCorner({ rowRail: railRow, multiplayer: isMulti, spectating: viewerIsObserver })
++  const seatRowHidden = railRowHidden({
++    inCorner: cameraInCorner,
++    multiView,
++    platesOnEverySeat: bottomStripActive && !centerOrbStandsIn && !teamBannersActive,
++    livingOpponentIds: opponents.filter((o) => !o.hasLost).map((o) => o.playerId),
++    visibleIds: anchorVisibleBoardIds,
++  })
+ 
+   // Compute mana selection progress using most-constrained-first matching
+   const manaProgress = useMemo(() => {
+@@ -1045,6 +1055,8 @@
+             spectatorMode={spectatorMode}
+             visibleBoardIds={anchorVisibleBoardIds}
+             topOffset={effectiveTopOffset}
++            hidden={seatRowHidden}
++            showCameraToggles={!cameraInCorner}
+           />
+           <div
+             data-opponent-strip
+diff --git a/web-client/src/components/game/OpponentRail.tsx b/web-client/src/components/game/OpponentRail.tsx
+--- a/web-client/src/components/game/OpponentRail.tsx
++++ b/web-client/src/components/game/OpponentRail.tsx
+@@ -97,8 +97,14 @@
+   spectatorMode = false,
+   visibleBoardIds = [],
+   topOffset = 0,
++  hidden = false,
++  showCameraToggles = true,
+ }: {
+   spectatorMode?: boolean
++  /** Every board is on screen with a plate that carries the seat info, so the row is not drawn. */
++  hidden?: boolean
++  /** False when Overview / Follow live beside Concede instead (see desktop/arena/CameraControls). */
++  showCameraToggles?: boolean
+   /**
+    * Boards currently visible in the strip (the viewed board, plus every cell of a
+    * shared-strip view). A chip whose board is visible drops its player anchors — the
+@@ -142,7 +148,7 @@
+   const sharedLife = useIsSharedLifeTeamGame()
+   // Arena layout: the rail runs as a row along the top instead of a column down the left edge.
+   const arenaRail = useArenaLayout()
+-  if (opponents.length <= 1) return null
++  if (opponents.length <= 1 || hidden) return null
+ 
+   const teammates = teamMode ? opponents.filter((o) => teamMap[o.playerId] === viewerTeam) : []
+   const enemies = teamMode ? opponents.filter((o) => teamMap[o.playerId] !== viewerTeam) : opponents
+@@ -282,7 +288,7 @@
+           seat list, shown in normal play and while spectating alike (a spectator steers the same
+           multi-board camera). Overview is desktop/tablet-landscape only — three ~33% board cells
+           are unusable on a portrait phone (GameBoard ignores the mode on isMobile too). */}
+-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, pointerEvents: 'none' }}>
++      <div style={{ display: showCameraToggles ? 'flex' : 'none', alignItems: 'center', gap: 5, marginTop: 6, pointerEvents: 'none' }}>
+         {overviewSupported(responsive) && (
+           <CameraToggle
+             label="Overview"
+diff --git a/web-client/src/components/game/board/OpponentBoardArea.tsx b/web-client/src/components/game/board/OpponentBoardArea.tsx
+--- a/web-client/src/components/game/board/OpponentBoardArea.tsx
++++ b/web-client/src/components/game/board/OpponentBoardArea.tsx
+@@ -19,6 +19,7 @@
+ import { AttackRelationTag, useAttackRelation } from '../AttackRelationTag'
+ import { EmoteBubble } from '../../tableTalk/EmoteBubble'
+ import { SeatPortrait, useHasSeatPortrait } from '../SeatPortrait'
++import { SeatPlateExtras, useSeatPlateTurn } from '@/desktop/arena/SeatPlateExtras'
+ 
+ /** Height of a shared-strip cell's name-plate band (the pill plus its top margin). */
+ export const CELL_PLATE_BAND = 34
+@@ -711,6 +712,8 @@
+   // The plate keeps the name (which is the thing a plate is for) and drops the life.
+   const sharedLifeTeam = useIsSharedLifeTeamGame()
+   const hasPortrait = useHasSeatPortrait(playerId)
++  // At a row-rail table the plate also carries what the top seat row used to (turn, hand, speed...).
++  const seatTurn = useSeatPlateTurn(player)
+ 
+   const combatState = useGameStore((state) => state.combatState)
+   const assignDefender = useGameStore((state) => state.assignDefenderToSelectedAttackers)
+@@ -844,7 +847,9 @@
+           ? '0 0 12px rgba(255, 68, 68, 0.6)'
+           : isPlayerTargetSelected
+             ? '0 0 10px rgba(255, 255, 0, 0.6)'
+-            : 'none',
++            : seatTurn
++              ? `0 0 0 2px ${seat.base}, 0 0 10px 1px ${seat.soft}`
++              : 'none',
+         opacity: isAttackRestricted ? 0.55 : 1,
+         filter: isAttackRestricted ? 'saturate(0.5)' : 'none',
+         transition: 'border-color 150ms, box-shadow 150ms, opacity 200ms',
+@@ -916,6 +921,7 @@
+           {player.life}
+         </span>
+       )}
++      <SeatPlateExtras player={player} showHand={handCount == null} />
+       {/* The anchor-carrying plate is this seat's face on the table, so their emotes speak from it. */}
+       {carriesAnchors && <EmoteBubble playerId={playerId} placement="auto" />}
+     </div>
+diff --git a/web-client/src/components/game/overlay/GameControls.tsx b/web-client/src/components/game/overlay/GameControls.tsx
+--- a/web-client/src/components/game/overlay/GameControls.tsx
++++ b/web-client/src/components/game/overlay/GameControls.tsx
+@@ -4,6 +4,7 @@
+ import { useIsSharedLifeTeamGame } from '@/store/selectors'
+ import { useResponsiveContext } from '../board/shared'
+ import { GearIcon, PreferencesDialog } from '@/components/preferences/PreferencesDialog'
++import { CameraControls } from '@/desktop/arena/CameraControls'
+ 
+ /**
+  * Concede button with confirmation, positioned top-right.
+@@ -93,6 +94,8 @@
+ 
+   return (
+     <div style={base}>
++      {/* Overview / Follow (pod tables only) sit to the left of Concede. */}
++      <CameraControls />
+       <button
+         onClick={() => setConfirming(true)}
+         style={{
