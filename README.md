@@ -158,6 +158,18 @@ choice is stored in `localStorage` only; it is never sent to the server.
   steps down by just enough to clear them, so only those corner boards give a little of the gain back.
   Patches 0022 and 0023; `desktop/arena/SeatPlateExtras.tsx`, `CameraControls.tsx`, and the tested rules in
   `arenaRail.ts`.
+- **A ring around whoever holds priority.** The battlefield of the seat that currently holds priority gets a
+  thin ring in that seat's colour (1.5 px against the name plate's 2 px turn ring, so the turn stays the louder
+  of the two). It follows priority as it passes, fades between boards, never takes a click, and works in 2-player
+  and pod games alike; a seat that has lost never shows it. Arena layout only (Classic is upstream's board).
+  `desktop/arena/PriorityFrame.tsx` and the tested rule in `priorityFrameMetrics.ts`; no patch of its own.
+- **A playmat behind every battlefield.** Each player's board has a faint backdrop (20 % opacity, fading out
+  toward the edges, never takes a click): their **commander's art** in Commander (two partners share the mat
+  half and half); with no commander, the art of the **deck's marquee card**, the highest-mana-value non-land
+  card of theirs the client has seen, which then stays put for the game; and before anyone has shown a spell
+  (an opponent who has only played lands), a **colour wash** of the basic land types they have shown, or a
+  neutral slate. Art is Scryfall's art crop, from the card's own image URL where it has one. Arena layout only.
+  `desktop/arena/Playmat.tsx` and the tested rules in `playmatArt.ts`; patch 0025 passes the seat to the zones.
 - **You sit bottom centre at six players.** In a free-for-all with six (or seven) players the table shows
   three boards on the bottom row, and yours is the middle one: the next seat in turn order on your left,
   the previous seat on your right, the rest across the top. With fewer players (or eight) the bottom row has
@@ -174,13 +186,6 @@ choice is stored in `localStorage` only; it is never sent to the server.
 - **Ungroup toggles aren't clipped.** The small arrows on a stack of identical cards hang just outside it, so
   the zones keep 8 px of headroom above and beside their tiles; a row at the edge of a board no longer cuts
   them off.
-- **A playmat behind every battlefield.** Each player's board has a faint backdrop (20 % opacity, fading out
-  toward the edges, never takes a click): their **commander's art** in Commander (two partners share the mat
-  half and half); with no commander, the art of the **deck's marquee card**, the highest-mana-value non-land
-  card of theirs the client has seen, which then stays put for the game; and before anyone has shown a spell
-  (an opponent who has only played lands), a **colour wash** of the basic land types they have shown, or a
-  neutral slate. Art is Scryfall's art crop, from the card's own image URL where it has one. Arena layout only.
-  `desktop/arena/Playmat.tsx` and the tested rules in `playmatArt.ts`; patch 0025 passes the seat to the zones.
 - **Tile size depends on the seat.** Each seat's tiles are the widest that fit that seat's own slot for what it
   has out, capped by the window height. A seat with few permanents therefore draws bigger tiles than a crowded
   one, and the sizes differ between seats in a pod.

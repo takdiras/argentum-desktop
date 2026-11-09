@@ -5,23 +5,19 @@
  */
 import { useMemo, useRef } from 'react'
 import { useGameStore } from '@/store/gameStore.ts'
-import { selectViewingPlayerId } from '@/store/selectors.ts'
 import {
   PLAYMAT_OPACITY,
   decodePlaymatArt,
   encodePlaymatArt,
   playmatArtFor,
-  playmatOwnerId,
   playmatWash,
   stickyPlaymatArt,
 } from './playmatArt'
+import { useBoardOwnerId } from './useBoardOwnerId'
 
 /** The encoded art for this battlefield, or null before the game state arrives. */
 function usePlaymatArt(isOpponent: boolean, playerId?: string | undefined): string | null {
-  const viewerId = useGameStore(selectViewingPlayerId)
-  const ownerId = useGameStore((s) =>
-    s.gameState ? playmatOwnerId(s.gameState.players, viewerId, isOpponent, playerId) : null,
-  )
+  const ownerId = useBoardOwnerId(isOpponent, playerId)
   // A string, so the selector returns by value and the mat re-renders only when its art changes.
   const fresh = useGameStore((s) =>
     s.gameState && ownerId ? encodePlaymatArt(playmatArtFor(Object.values(s.gameState.cards), ownerId)) : null,
