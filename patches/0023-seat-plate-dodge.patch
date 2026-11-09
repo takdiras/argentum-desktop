@@ -1,0 +1,62 @@
+diff --git a/web-client/src/components/game/GameBoard.tsx b/web-client/src/components/game/GameBoard.tsx
+--- a/web-client/src/components/game/GameBoard.tsx
++++ b/web-client/src/components/game/GameBoard.tsx
+@@ -1077,7 +1077,9 @@
+               // corner, so the band is dead space and the enemy boards can have it. The per-cell
+               // collapse control does live in a corner, so it keeps the old offset via
+               // `controlsTop` rather than riding up with the plate.
+-              paddingTop: multiView ? (teamBannersActive ? TEAM_STRIP_TOP : 48) : 0,
++              // With the seat row gone (seatRowHidden) the strip rides up like a team table's; a plate that
++              // would then sit under Concede / Fullscreen steps down by itself (useSeatPlateDodge).
++              paddingTop: multiView ? (teamBannersActive || seatRowHidden ? TEAM_STRIP_TOP : 48) : 0,
+               boxSizing: 'border-box',
+             }}
+             onTouchStart={(e) => {
+@@ -1134,7 +1136,7 @@
+                       // that one renders beside your own. An enemy's face-down arc says nothing a
+                       // count doesn't, so it gives its height back to the battlefields.
+                       cellHand={teamBannersActive && !oIsAlly ? 'count' : 'fan'}
+-                      {...(teamBannersActive ? { controlsTop: 48 - TEAM_STRIP_TOP + 6 } : {})}
++                      {...(teamBannersActive || seatRowHidden ? { controlsTop: 48 - TEAM_STRIP_TOP + 6 } : {})}
+                       // The center-HUD orb's player keeps their anchors on that orb; every other
+                       // expanded board's plate takes over from its rail chip. Normally that's the
+                       // viewed board, but a Two-Headed Giant HUD points its orb at the enemy team
+diff --git a/web-client/src/components/game/board/OpponentBoardArea.tsx b/web-client/src/components/game/board/OpponentBoardArea.tsx
+--- a/web-client/src/components/game/board/OpponentBoardArea.tsx
++++ b/web-client/src/components/game/board/OpponentBoardArea.tsx
+@@ -19,7 +19,7 @@
+ import { AttackRelationTag, useAttackRelation } from '../AttackRelationTag'
+ import { EmoteBubble } from '../../tableTalk/EmoteBubble'
+ import { SeatPortrait, useHasSeatPortrait } from '../SeatPortrait'
+-import { SeatPlateExtras, useSeatPlateTurn } from '@/desktop/arena/SeatPlateExtras'
++import { SeatPlateExtras, useSeatPlateDodge, useSeatPlateTurn } from '@/desktop/arena/SeatPlateExtras'
+ 
+ /** Height of a shared-strip cell's name-plate band (the pill plus its top margin). */
+ export const CELL_PLATE_BAND = 34
+@@ -714,6 +714,9 @@
+   const hasPortrait = useHasSeatPortrait(playerId)
+   // At a row-rail table the plate also carries what the top seat row used to (turn, hand, speed...).
+   const seatTurn = useSeatPlateTurn(player)
++  // ...and a plate under a corner control (Concede, Fullscreen) steps down just far enough to clear it.
++  const plateRef = useRef<HTMLDivElement>(null)
++  const dodge = useSeatPlateDodge(plateRef, anchor === 'top')
+ 
+   const combatState = useGameStore((state) => state.combatState)
+   const assignDefender = useGameStore((state) => state.assignDefenderToSelectedAttackers)
+@@ -801,6 +804,7 @@
+ 
+   return (
+     <div
++      ref={plateRef}
+       data-board-plate={playerId}
+       {...(carriesAnchors
+         ? {
+@@ -824,7 +828,7 @@
+       onClick={interactive ? handleClick : undefined}
+       style={{
+         position: 'absolute',
+-        ...(anchor === 'bottom' ? { bottom: top } : { top }),
++        ...(anchor === 'bottom' ? { bottom: top } : { top: top + dodge }),
+         left: '50%',
+         transform: 'translateX(-50%)',
+         zIndex: 56,

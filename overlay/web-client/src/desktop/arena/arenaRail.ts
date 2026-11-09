@@ -127,3 +127,68 @@ export const RAIL_ROW_CSS = `
 [data-rail-condensed] > div:not(:last-child):hover [data-rail-hand-icon] { display: inline-block !important; }
 [data-rail-condensed] > div:not(:last-child):hover kbd { display: inline-flex !important; }
 `
+
+/**
+ * Whether Overview / Follow sit in the top-right corner, beside Concede, instead of at the end of the
+ * seat row. They are settings, not seats, and the corner is where the other window controls live.
+ * Only for a player at a row-rail table: a spectator has no Concede button to sit beside, so keeps them
+ * in the rail.
+ */
+export function cameraControlsInCorner(a: { rowRail: boolean; multiplayer: boolean; spectating: boolean }): boolean {
+  return a.rowRail && a.multiplayer && !a.spectating
+}
+
+/**
+ * Whether the seat row can be dropped altogether: with Overview on, every living opponent's board is
+ * on screen with its own name plate, and the plate carries everything a seat chip would (name, life,
+ * hand, speed, counters, whose turn it is). The row is only needed while a board is *not* on screen,
+ * because clicking its chip is how you bring that board in (focused camera, a collapsed cell, the
+ * combat defender split), or while a seat has no plate (the center orb stands in for one, and on a
+ * table without a bottom row your own seat is the orb): `platesOnEverySeat` says every seat has one.
+ */
+export function railRowHidden(a: {
+  inCorner: boolean
+  multiView: boolean
+  platesOnEverySeat: boolean
+  livingOpponentIds: readonly string[]
+  visibleIds: readonly string[]
+}): boolean {
+  if (!a.inCorner || !a.multiView || !a.platesOnEverySeat) return false
+  const visible = new Set(a.visibleIds)
+  return a.livingOpponentIds.every((id) => visible.has(id))
+}
+
+/** Default maximum hand size (CR 402.2): no "/max" suffix is shown while it is unchanged. */
+const DEFAULT_MAX_HAND_SIZE = 7
+
+/** "/∞" for no maximum (Reliquary Tower), "/N" for a finite cap, nothing at the normal 7. */
+export function handLimitSuffix(maxHandSize?: number | null): string {
+  if (maxHandSize === undefined || maxHandSize === DEFAULT_MAX_HAND_SIZE) return ''
+  return maxHandSize === null ? '/∞' : `/${maxHandSize}`
+}
+
+export interface PlateRect {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+
+/** Height of the corner controls' band (Fullscreen / settings on the left, Concede on the right). */
+export const CORNER_BAND_BOTTOM = 48
+
+/**
+ * How far down a name plate must move to clear the corner controls it overlaps, in px (0 when it
+ * overlaps none). With the seat row gone the strip along the top is shortened, so the plate of a
+ * corner board can end up under Concede / Overview / Follow (or the Fullscreen buttons); only that
+ * plate steps down, by just enough, and the rest of the row keeps the gained height.
+ */
+export function plateDodge(plate: PlateRect, zones: readonly PlateRect[], gap = 6): number {
+  let need = 0
+  for (const z of zones) {
+    const overlapsX = plate.left < z.right + gap && plate.right > z.left - gap
+    const overlapsY = plate.top < z.bottom + gap && plate.bottom > z.top
+    if (overlapsX && overlapsY) need = Math.max(need, z.bottom + gap - plate.top)
+  }
+  return Math.max(0, need)
+}
