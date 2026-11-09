@@ -1,0 +1,105 @@
+diff --git a/web-client/src/components/game/GameBoard.tsx b/web-client/src/components/game/GameBoard.tsx
+--- a/web-client/src/components/game/GameBoard.tsx
++++ b/web-client/src/components/game/GameBoard.tsx
+@@ -42,6 +42,7 @@
+ import { arenaHandTuck, arenaOpponentHandReservation } from '@/desktop/arena/arenaHand'
+ import { cameraControlsInCorner, railIsHorizontal, railRowHidden, railViewportIsCompact } from '@/desktop/arena/arenaRail'
+ import { freeForAllRows } from '@/desktop/arena/arenaSeating'
++import { AREA_BACKDROP_HOST, AreaBackdrop } from '@/desktop/arena/AreaBackdrop'
+ import { CardPreview } from './card'
+ import { EmotePicker } from '../tableTalk/EmotePicker'
+ import { ChatButton } from '@/components/messages/ChatButton'
+@@ -1451,7 +1452,8 @@
+           rendered read-only the way spectating renders a bottom seat. When the bottom row
+           holds several seats the strip below takes over. */}
+       {isEliminatedSpectator && eliminatedBottomSeat && !bottomStripActive && (
+-        <div style={{ ...styles.playerArea, position: 'relative' }}>
++        <div style={{ ...styles.playerArea, position: 'relative', ...(arenaLayout ? AREA_BACKDROP_HOST : null) }}>
++          <AreaBackdrop isOpponent={false} playerId={eliminatedBottomSeat.playerId} turnRing={eliminatedBottomSeat.playerId === gameState.activePlayerId} />
+           {/* Same active-turn ring the strip cells carry, so the highlight keeps meaning
+               "whose turn it is" on the bottom half too. */}
+           {eliminatedBottomSeat.playerId === gameState.activePlayerId && (
+@@ -1587,7 +1589,8 @@
+           })}
+         </div>
+       ) : isEliminatedSpectator ? null : (
+-        <div ref={playerRowRef} style={styles.playerArea}>
++        <div ref={playerRowRef} style={arenaLayout ? { ...styles.playerArea, ...AREA_BACKDROP_HOST } : styles.playerArea}>
++          <AreaBackdrop isOpponent={false} />
+           <div style={styles.playerRowWithZones}>
+             {/* Player command zone (left side) — Commander format only; renders nothing otherwise. */}
+             {effectiveViewingPlayer && <CommandZone player={effectiveViewingPlayer} />}
+@@ -2731,8 +2734,10 @@
+         // instead of being cut off by it; the Battlefield slot inside is already unclipped.
+         overflow: arenaCell ? 'visible' : 'hidden',
+         position: 'relative',
++        ...(arenaCell ? AREA_BACKDROP_HOST : null),
+       }}
+     >
++      <AreaBackdrop isOpponent={false} playerId={player.playerId} turnRing={isActiveTurn} />
+       {/* Your own cell carries the same active-turn ring as every other board. */}
+       {isActiveTurn && (
+         <div
+diff --git a/web-client/src/components/game/board/OpponentBoardArea.tsx b/web-client/src/components/game/board/OpponentBoardArea.tsx
+--- a/web-client/src/components/game/board/OpponentBoardArea.tsx
++++ b/web-client/src/components/game/board/OpponentBoardArea.tsx
+@@ -19,7 +19,9 @@
+ import { AttackRelationTag, useAttackRelation } from '../AttackRelationTag'
+ import { EmoteBubble } from '../../tableTalk/EmoteBubble'
+ import { SeatPortrait, useHasSeatPortrait } from '../SeatPortrait'
+-import { SeatPlateExtras, useSeatPlateDodge, useSeatPlateTurn } from '@/desktop/arena/SeatPlateExtras'
++import { SeatPlateExtras, useSeatPlateDodge, useSeatPlatePriority, useSeatPlateTurn } from '@/desktop/arena/SeatPlateExtras'
++import { AREA_BACKDROP_HOST, AreaBackdrop } from '@/desktop/arena/AreaBackdrop'
++import { PRIORITY_FRAME_WIDTH, TURN_RING_WIDTH } from '@/desktop/arena/priorityFrameMetrics'
+ 
+ /** Height of a shared-strip cell's name-plate band (the pill plus its top margin). */
+ export const CELL_PLATE_BAND = 34
+@@ -301,7 +303,7 @@
+       ref={layout === 'grid' ? areaRef : undefined}
+       style={
+         layout === 'grid'
+-          ? arenaCells ? { ...styles.opponentArea, overflow: 'visible' } : styles.opponentArea
++          ? arenaCells ? { ...styles.opponentArea, overflow: 'visible', ...AREA_BACKDROP_HOST } : styles.opponentArea
+           : {
+               // styles.opponentArea minus the grid-row binding — the strip cell
+               // provides the vertical slot instead.
+@@ -316,6 +318,7 @@
+             }
+       }
+     >
++      {layout === 'grid' && <AreaBackdrop isOpponent={!bottomHalf} playerId={opponent.playerId} />}
+       <div style={{ ...styles.playerRowWithZones, alignItems: 'flex-start' }}>
+         {/* Opponent command zone (left side) — Commander format only; renders nothing otherwise. */}
+         <CommandZone player={opponent} isOpponent compact={layout === 'strip'} />
+@@ -364,8 +367,10 @@
+         flexDirection: 'column',
+         overflow: 'hidden',
+         transition: 'flex-basis 220ms cubic-bezier(0.4, 0, 0.2, 1), min-width 220ms cubic-bezier(0.4, 0, 0.2, 1)',
++        ...(arenaCells ? AREA_BACKDROP_HOST : null),
+       }}
+     >
++      <AreaBackdrop isOpponent={!bottomHalf} playerId={opponent.playerId} turnRing={!!activeTurnRingColor} />
+       {/* Two-Headed Giant ally marker — a team-colored corner badge so a teammate's board (with
+           its face-up hand) is never mistaken for an opponent's. */}
+       {isAlly && !hideHand && (
+@@ -714,6 +719,7 @@
+   const hasPortrait = useHasSeatPortrait(playerId)
+   // At a row-rail table the plate also carries what the top seat row used to (turn, hand, speed...).
+   const seatTurn = useSeatPlateTurn(player)
++  const seatPriority = useSeatPlatePriority(player)
+   // ...and a plate under a corner control (Concede, Fullscreen) steps down just far enough to clear it.
+   const plateRef = useRef<HTMLDivElement>(null)
+   const dodge = useSeatPlateDodge(plateRef, anchor === 'top')
+@@ -852,8 +858,10 @@
+           : isPlayerTargetSelected
+             ? '0 0 10px rgba(255, 255, 0, 0.6)'
+             : seatTurn
+-              ? `0 0 0 2px ${seat.base}, 0 0 10px 1px ${seat.soft}`
+-              : 'none',
++              ? `0 0 0 ${TURN_RING_WIDTH}px ${seat.base}, 0 0 12px 2px ${seat.soft}`
++              : seatPriority
++                ? `0 0 0 ${PRIORITY_FRAME_WIDTH}px ${seat.base}, 0 0 8px 1px ${seat.soft}`
++                : 'none',
+         opacity: isAttackRestricted ? 0.55 : 1,
+         filter: isAttackRestricted ? 'saturate(0.5)' : 'none',
+         transition: 'border-color 150ms, box-shadow 150ms, opacity 200ms',

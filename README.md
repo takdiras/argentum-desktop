@@ -38,6 +38,7 @@ files into upstream. That keeps upstream's code recognisable and the patches eas
 | `patches/0021-stack-side.patch` | Pins the stack panel to the left or right window edge (Preferences → Stack position) and opens its yield menu on the inward side. |
 | `patches/0024-incoming-combat-damage.patch` | Mounts the incoming-damage badges next to the combat arrows. |
 | `patches/0025-arena-playmat.patch` | Tells the arena zones whose board they are, so each can draw its playmat. |
+| `patches/0026-area-backdrop.patch` | Mounts the playmat and the priority / turn ring behind each player's whole area, and gives the name plate its priority ring. |
 | `overlay/web-client/src/desktop/` | New files: `backend.ts`, `installDesktopFetch.ts` and the connection status (above), and `PasteSignInLink.tsx` + `signInLink.ts` (sign-in, below). |
 | `overlay/web-client/src/desktop/arena/` | The arena layout: zones, compact card face, sizing solver, stack metrics, settings control. |
 | `overlay/web-client/desktop-midnight-theme.mjs` | The Vite plugin that retints upstream's purples to near-black navy. |
@@ -158,18 +159,22 @@ choice is stored in `localStorage` only; it is never sent to the server.
   steps down by just enough to clear them, so only those corner boards give a little of the gain back.
   Patches 0022 and 0023; `desktop/arena/SeatPlateExtras.tsx`, `CameraControls.tsx`, and the tested rules in
   `arenaRail.ts`.
-- **A ring around whoever holds priority.** The battlefield of the seat that currently holds priority gets a
-  thin ring in that seat's colour (1.5 px against the name plate's 2 px turn ring, so the turn stays the louder
-  of the two). It follows priority as it passes, fades between boards, never takes a click, and works in 2-player
-  and pod games alike; a seat that has lost never shows it. Arena layout only (Classic is upstream's board).
-  `desktop/arena/PriorityFrame.tsx` and the tested rule in `priorityFrameMetrics.ts`; no patch of its own.
-- **A playmat behind every battlefield.** Each player's board has a faint backdrop (20 % opacity, fading out
-  toward the edges, never takes a click): their **commander's art** in Commander (two partners share the mat
-  half and half); with no commander, the art of the **deck's marquee card**, the highest-mana-value non-land
-  card of theirs the client has seen, which then stays put for the game; and before anyone has shown a spell
-  (an opponent who has only played lands), a **colour wash** of the basic land types they have shown, or a
-  neutral slate. Art is Scryfall's art crop, from the card's own image URL where it has one. Arena layout only.
-  `desktop/arena/Playmat.tsx` and the tested rules in `playmatArt.ts`; patch 0025 passes the seat to the zones.
+- **A ring around whoever holds priority, and a thicker one on the turn.** Each player's whole area (command
+  zone, battlefield and piles, and in a pod the name plate) gets a thin ring in that seat's colour (1.5 px) while
+  that seat holds priority. The seat whose turn it is wears the turn ring instead, 3 px, and never a second
+  priority ring on top of it: on its own turn a seat that also holds priority shows just the one thick ring.
+  The name plate follows the same rule (thin ring for priority off-turn, thick for the turn). It follows priority
+  as it passes, fades between boards, never takes a click, and works in 2-player and pod games alike; a seat
+  that has lost never shows it. Arena layout only (Classic is upstream's board). `desktop/arena/AreaFrame.tsx`
+  and the tested rules in `priorityFrameMetrics.ts`; patch 0026.
+- **A playmat behind every player's area.** The whole area (command zone, battlefield and piles, and in a pod the
+  strip behind the name plate) has a faint backdrop (20 % opacity, fading out toward the edges, never takes a
+  click): their **commander's art** in Commander (two partners share the mat half and half); with no commander,
+  the art of the **deck's marquee card**, the highest-mana-value non-land card of theirs the client has seen,
+  which then stays put for the game; and before anyone has shown a spell (an opponent who has only played
+  lands), a **colour wash** of the basic land types they have shown, or a neutral slate. Art is Scryfall's art
+  crop, from the card's own image URL where it has one. Arena layout only. `desktop/arena/Playmat.tsx`,
+  `AreaBackdrop.tsx` and the tested rules in `playmatArt.ts`; patches 0025 and 0026.
 - **You sit bottom centre at six players.** In a free-for-all with six (or seven) players the table shows
   three boards on the bottom row, and yours is the middle one: the next seat in turn order on your left,
   the previous seat on your right, the rest across the top. With fewer players (or eight) the bottom row has

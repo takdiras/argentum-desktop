@@ -24,6 +24,7 @@ import {
   railViewportIsCompact,
   type PlateRect,
 } from './arenaRail'
+import { areaRing, holdsPriority } from './priorityFrameMetrics'
 
 /** Whether plates carry the seat information (a row-rail pod, as a player). */
 export function useSeatPlateRail(): boolean {
@@ -40,6 +41,19 @@ export function useSeatPlateTurn(player: ClientPlayer): boolean {
   const enabled = useSeatPlateRail()
   const activePlayerId = useGameStore((s) => selectGameState(s)?.activePlayerId)
   return enabled && !player.hasLost && activePlayerId === player.playerId
+}
+
+/**
+ * Whether the plate shows the thin priority ring: this seat holds priority on someone else's turn.
+ * On its own turn the turn ring (thicker, see `priorityFrameMetrics`) already marks the plate.
+ */
+export function useSeatPlatePriority(player: ClientPlayer): boolean {
+  const turn = useSeatPlateTurn(player)
+  const enabled = useSeatPlateRail()
+  const priority = useGameStore((s) =>
+    holdsPriority(player.playerId, selectGameState(s)?.priorityPlayerId, player.hasLost),
+  )
+  return enabled && areaRing(turn, priority) === 'priority'
 }
 
 /**

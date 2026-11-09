@@ -1,19 +1,26 @@
 /**
- * The priority frame: a thin ring around the battlefield of whichever seat holds priority, in that
- * seat's colour, so the eye can tell where the game is waiting without reading a plate.
+ * The ring around a player's area (their command zone, battlefield and piles, and in a pod their name plate):
+ * which seat shows one, and how thick it is.
  *
- * It is the battlefield-sized sibling of the plate's turn ring (2px, `seat.base`, see patch 0022):
- * the same colour language, slightly thinner so the turn ring stays the louder of the two.
+ *   - The seat whose **turn** it is wears the turn ring: thick, in the seat's colour.
+ *   - A seat that holds **priority** on someone else's turn wears the priority ring: the same colour, thin.
+ *   - On its own turn a seat never gets a second, priority ring: the turn ring already marks it, so it
+ *     is drawn thicker than the priority ring instead of the two stacking.
  */
 
-/** Width of the plate's turn ring (patch 0022), kept here so the frame can be defined against it. */
-export const TURN_RING_WIDTH = 2
+/** The turn ring (area and name plate): clearly thicker than the priority ring. */
+export const TURN_RING_WIDTH = 3
 
-/** The priority frame is a touch thinner than the turn ring. */
+/** The priority ring is thin, so it reads as secondary to the turn ring. */
 export const PRIORITY_FRAME_WIDTH = 1.5
 
-/** Corner radius, matching the playmat it frames. */
-export const PRIORITY_FRAME_RADIUS = 18
+/** The ring sits this far inside the area's edge, and the playmat fills the same box. */
+export const AREA_RING_INSET = 2
+
+/** Corner radius of the ring and the playmat. */
+export const AREA_RING_RADIUS = 10
+
+export type AreaRing = 'turn' | 'priority' | 'none'
 
 /**
  * Whether this board's owner currently holds priority. A seat that has lost never does, and nobody
@@ -25,4 +32,17 @@ export function holdsPriority(
   ownerHasLost: boolean,
 ): boolean {
   return ownerId != null && priorityPlayerId != null && ownerId === priorityPlayerId && !ownerHasLost
+}
+
+/**
+ * Which ring an area shows. `turn` is true when this area carries a turn ring at all (its seat is the
+ * active player, at a table that draws one); that ring wins over priority.
+ */
+export function areaRing(turn: boolean, priority: boolean): AreaRing {
+  if (turn) return 'turn'
+  return priority ? 'priority' : 'none'
+}
+
+export function areaRingWidth(ring: AreaRing): number {
+  return ring === 'turn' ? TURN_RING_WIDTH : PRIORITY_FRAME_WIDTH
 }
