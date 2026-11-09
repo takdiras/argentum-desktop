@@ -158,6 +158,11 @@ choice is stored in `localStorage` only; it is never sent to the server.
   steps down by just enough to clear them, so only those corner boards give a little of the gain back.
   Patches 0022 and 0023; `desktop/arena/SeatPlateExtras.tsx`, `CameraControls.tsx`, and the tested rules in
   `arenaRail.ts`.
+- **A ring around whoever holds priority.** The battlefield of the seat that currently holds priority gets a
+  thin ring in that seat's colour (1.5 px against the name plate's 2 px turn ring, so the turn stays the louder
+  of the two). It follows priority as it passes, fades between boards, never takes a click, and works in 2-player
+  and pod games alike; a seat that has lost never shows it. Arena layout only (Classic is upstream's board).
+  `desktop/arena/PriorityFrame.tsx` and the tested rule in `priorityFrameMetrics.ts`; no patch of its own.
 - **A playmat behind every battlefield.** Each player's board has a faint backdrop (20 % opacity, fading out
   toward the edges, never takes a click): their **commander's art** in Commander (two partners share the mat
   half and half); with no commander, the art of the **deck's marquee card**, the highest-mana-value non-land

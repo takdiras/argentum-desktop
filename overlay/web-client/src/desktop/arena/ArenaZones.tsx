@@ -14,6 +14,7 @@ import type { GroupedCard } from '@/store/selectors.ts'
 import type { ResponsiveSizes } from '@/hooks/useResponsive'
 import { ResponsiveContext } from '@/components/game/board/shared'
 import { Playmat } from './Playmat'
+import { PriorityFrame } from './PriorityFrame'
 import {
   ARENA_BADGE_OVERHANG,
   ARENA_LAND_SHARE,
@@ -74,6 +75,8 @@ export function ArenaZones({
       }}
     >
       <Playmat isOpponent={isOpponent} playerId={playerId} />
+      {/* Ring in the priority holder's colour: where the game is waiting right now. */}
+      <PriorityFrame isOpponent={isOpponent} playerId={playerId} />
       {/* Creatures take whatever height the band leaves and centre in it. */}
       <div
         style={{
