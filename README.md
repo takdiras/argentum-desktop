@@ -244,6 +244,10 @@ Tauri's HTTP plugin doesn't request compression unless its `gzip` / `brotli` / `
 so this project enables them in `src-tauri/Cargo.toml`. Without that, the catalog takes many times longer
 and decks show "not implemented" for the whole wait.
 
+## Deck loading indicator
+
+The deck screens (the Library, the Deckbuilder's "My decks" rail and saved-deck browser, and the deck picker in lobbies and games) show a spinner with a label such as "Loading your decks…" while the deck list is still loading, so an empty screen can be told apart from "no decks". Decks already on this computer appear straight away, with a slim "Loading your online decks…" row above them until the account's decks arrive. It is a no-op once loading finishes. Hooked in by patch 0020; the component is `desktop/loading/LoadingIndicator.tsx`.
+
 ## Signing in
 
 Accounts use a passwordless magic link. The server builds that link from its own configured public URL, so
