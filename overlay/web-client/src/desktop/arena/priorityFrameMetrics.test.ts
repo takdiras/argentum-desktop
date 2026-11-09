@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { PRIORITY_FRAME_WIDTH, TURN_RING_WIDTH, holdsPriority } from './priorityFrameMetrics'
+import {
+  PRIORITY_FRAME_WIDTH,
+  TURN_RING_WIDTH,
+  areaRing,
+  areaRingWidth,
+  holdsPriority,
+} from './priorityFrameMetrics'
 
 describe('holdsPriority', () => {
   it('is true for the seat that holds priority', () => {
@@ -25,9 +31,23 @@ describe('holdsPriority', () => {
   })
 })
 
-describe('frame width', () => {
-  it('is slightly thinner than the turn ring', () => {
-    expect(PRIORITY_FRAME_WIDTH).toBeLessThan(TURN_RING_WIDTH)
+describe('areaRing', () => {
+  it('shows the priority ring only for a seat that holds priority off its own turn', () => {
+    expect(areaRing(false, true)).toBe('priority')
+    expect(areaRing(false, false)).toBe('none')
+  })
+
+  it('shows the turn ring, and never a second priority ring, on the seat whose turn it is', () => {
+    expect(areaRing(true, false)).toBe('turn')
+    expect(areaRing(true, true)).toBe('turn')
+  })
+})
+
+describe('ring width', () => {
+  it('draws the turn ring thicker than the priority ring', () => {
     expect(PRIORITY_FRAME_WIDTH).toBeGreaterThan(0)
+    expect(TURN_RING_WIDTH).toBeGreaterThan(PRIORITY_FRAME_WIDTH)
+    expect(areaRingWidth('turn')).toBe(TURN_RING_WIDTH)
+    expect(areaRingWidth('priority')).toBe(PRIORITY_FRAME_WIDTH)
   })
 })

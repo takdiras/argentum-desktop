@@ -1,7 +1,8 @@
 /**
- * A faint playmat behind one player's battlefield: their commander's art, else their deck's marquee
- * card, else a wash of their colours (see `playmatArt.ts`). It sits at the back of the zone's own
- * stacking context and never takes a click, so cards, targeting and drops are unaffected.
+ * A faint playmat behind one player's whole area (command zone, battlefield and piles, plus the name
+ * plate in a pod): their commander's art, else their deck's marquee card, else a wash of their
+ * colours (see `playmatArt.ts`). It sits at the back of the area's own stacking context and never
+ * takes a click, so cards, targeting and drops are unaffected.
  */
 import { useMemo, useRef } from 'react'
 import { useGameStore } from '@/store/gameStore.ts'
@@ -13,6 +14,7 @@ import {
   playmatWash,
   stickyPlaymatArt,
 } from './playmatArt'
+import { AREA_RING_INSET, AREA_RING_RADIUS } from './priorityFrameMetrics'
 import { useBoardOwnerId } from './useBoardOwnerId'
 
 /** The encoded art for this battlefield, or null before the game state arrives. */
@@ -41,12 +43,13 @@ export function Playmat({ isOpponent, playerId }: { isOpponent: boolean; playerI
       data-playmat={art.kind}
       style={{
         position: 'absolute',
-        inset: 0,
-        // Behind the zone's in-flow cards, inside its own stacking context (the zone sets zIndex).
+        // The box the area's ring frames.
+        inset: AREA_RING_INSET,
+        // Behind the area's in-flow content, inside its own stacking context (`AREA_BACKDROP_HOST`).
         zIndex: -1,
         pointerEvents: 'none',
         display: 'flex',
-        borderRadius: 18,
+        borderRadius: AREA_RING_RADIUS,
         overflow: 'hidden',
         opacity: PLAYMAT_OPACITY,
         // Fade into the table at the edges rather than ending in a hard rectangle.
