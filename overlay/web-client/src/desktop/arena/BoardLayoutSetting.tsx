@@ -4,6 +4,8 @@
  */
 import s from '@/components/preferences/Preferences.module.css'
 import { useBoardLayout, type BoardLayout } from './arenaLayoutStore'
+import type { StackSide } from './stackSide'
+import { useStackSide } from './stackSideStore'
 
 const OPTIONS: readonly { value: BoardLayout; label: string; hint: string }[] = [
   {
@@ -18,7 +20,51 @@ const OPTIONS: readonly { value: BoardLayout; label: string; hint: string }[] = 
   },
 ]
 
+const STACK_SIDE_OPTIONS: readonly { value: StackSide; label: string }[] = [
+  { value: 'left', label: 'Left' },
+  { value: 'right', label: 'Right' },
+]
+
+/** Both settings share this slot in the Preferences panel, so the one-line upstream hook stays as it is. */
 export function BoardLayoutSetting() {
+  return (
+    <>
+      <BoardLayoutChoice />
+      <StackSideChoice />
+    </>
+  )
+}
+
+function StackSideChoice() {
+  const side = useStackSide((st) => st.side)
+  const setSide = useStackSide((st) => st.setSide)
+
+  return (
+    <section className={s.section}>
+      <header className={s.sectionHead}>
+        <h2 className={s.sectionTitle}>Stack position</h2>
+        <p className={s.sectionLede}>Which edge of the table the stack sits against. Cards fly to it wherever it is. Changes apply immediately.</p>
+      </header>
+      <div className={s.segmented} role="radiogroup" aria-label="Stack position">
+        {STACK_SIDE_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={o.value === side}
+            className={s.segment}
+            data-active={o.value === side}
+            onClick={() => setSide(o.value)}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function BoardLayoutChoice() {
   const layout = useBoardLayout((st) => st.layout)
   const setLayout = useBoardLayout((st) => st.setLayout)
   const current = OPTIONS.find((o) => o.value === layout)

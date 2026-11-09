@@ -35,6 +35,7 @@ files into upstream. That keeps upstream's code recognisable and the patches eas
 | `patches/0014-stack-above-combat-arrows.patch` | Masks the combat arrow layer (and the BLOCKED tag) where the stack panel is, so the stack stays on top of it. |
 | `patches/0015-arena-overflow-visible.patch` | Arena only: stops the battlefield slot and the opponent's grid cell from clipping tilted tapped tiles and ungroup toggles at their edge. |
 | `patches/0016-arena-stack-scroll.patch` | The stack panel stays scrolled to the top of the stack, and older cards pin to its top edge as thin strips. |
+| `patches/0021-stack-side.patch` | Pins the stack panel to the left or right window edge (Preferences → Stack position) and opens its yield menu on the inward side. |
 | `overlay/web-client/src/desktop/` | New files: `backend.ts`, `installDesktopFetch.ts` and the connection status (above), and `PasteSignInLink.tsx` + `signInLink.ts` (sign-in, below). |
 | `overlay/web-client/src/desktop/arena/` | The arena layout: zones, compact card face, sizing solver, stack metrics, settings control. |
 | `overlay/web-client/desktop-midnight-theme.mjs` | The Vite plugin that retints upstream's purples to near-black navy. |
@@ -172,6 +173,11 @@ choice is stored in `localStorage` only; it is never sent to the server.
   put until the stack changes). The cards scrolled away above are pinned to the panel's top edge as thin strips,
   tighter the longer the stack is, so the more you scroll the denser the pile gets, and the panel never takes
   more than 90 px of them.
+- **The stack can sit on the right.** **Preferences → Stack position** (*Left*, the default, or *Right*) pins the
+  panel to that window edge with the same inset (120 px on a wide window), in Arena and in Classic. The yield menu
+  opens on the panel's inward side so it never covers it. Card flights to and from the stack need no special
+  case: each frame they read the stack item's on-screen position, so they land on whichever side it is. Stored in
+  `localStorage` only (patch 0021; `stackSide.ts` is unit-tested).
 - **Tapped lands aren't cut off.** The battlefield slot and the opponent's cell no longer clip at their edge in
   Arena, so a tilted tapped land at the edge of a row shows in full. The same goes for your own board in a
   multi-player table: its cell no longer cuts off cards (a tall land column, say) at its frame.
